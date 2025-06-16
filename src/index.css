@@ -1,0 +1,365 @@
+/* Font imports for better typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* 儿童书写教学专用字体 - 四线三格标准 */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Patrick+Hand:wght@400&family=Caveat:wght@400;500;600;700&family=Schoolbell&family=Fredoka:wght@300;400;500;600;700&display=swap');
+/* 备用手写字体 */
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Dancing+Script:wght@400;500;600;700&family=Delius&family=Kalam:wght@300;400;700&display=swap');
+/* 教学字体 */
+@import url('https://fonts.googleapis.com/css2?family=Teachers:wght@400;500;600;700&family=Playwrite+US+Trad:wght@100..400&family=Playwrite+US+Modern:wght@100..400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 页面尺寸标准化 - A4页面 */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+/* 防止卡片分页时断裂 */
+.word-card {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Print-specific styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-page {
+    page-break-after: always;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    display: block !important;
+    overflow: hidden !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* PDF Export specific styles - for html2canvas */
+.print-page {
+  width: 210mm;
+  height: 297mm;
+  background: white;
+  margin: 0 auto;
+  padding: 4mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.print-page .grid {
+  flex: 1;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-rows: 1fr 1fr !important;
+  gap: 4mm !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Simplified card container */
+.print-page .grid > div {
+  width: 100% !important;
+  height: 100% !important;
+  background: white !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+/* Picture section - Top 1/3 */
+.print-page .grid > div > div:nth-child(1) {
+  flex: 1 1 33.333% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  /* 确保图片区域完全干净，无任何背景图案 */
+  background: transparent !important;
+  background-image: none !important;
+  background-size: auto !important;
+  background-position: initial !important;
+  background-repeat: no-repeat !important;
+  position: relative !important;
+  z-index: 1 !important;
+  /* 强制重置所有可能的背景属性 */
+  background-color: transparent !important;
+  background-attachment: initial !important;
+  background-clip: initial !important;
+  background-origin: initial !important;
+}
+
+/* Word section with Four-Line Grid - Middle 1/3 */
+.print-page .grid > div > div:nth-child(2) {
+  flex: 1 1 33.333% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+}
+
+/* Definition section - Bottom 1/3 */
+.print-page .grid > div > div:nth-child(3) {
+  flex: 1 1 33.333% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px 24px !important;
+}
+
+/* 打印样式 - 使用已验证的图片布局 */
+.print-page img,
+.print-page .card-image {
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: cover !important;
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* ========================================
+   已验证布局 - 卡片顶部图片样式
+   ======================================== */
+/* 
+ * 此样式已通过测试验证，确保：
+ * - 图片保持 4:3 横向比例，不会因竖图撑高卡片
+ * - 使用 object-fit: cover 确保图片裁切得当
+ * - 容器使用 flex 布局防止图片拉伸溢出
+ * 
+ * ⚠️ 未来不要随意修改此样式，除非有重大布局问题
+ */
+.picture-container {
+  /* 容器基础样式 - 已验证 */
+  flex: 1 1 33.333%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  
+  /* 背景重置 - 确保图片区域完全干净 */
+  background: transparent !important;
+  background-image: none !important;
+  background-size: auto !important;
+  background-position: initial !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  background-attachment: initial !important;
+  background-clip: initial !important;
+  background-origin: initial !important;
+  position: relative;
+  z-index: 1;
+}
+
+.picture-container * {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* 已验证图片样式 - 统一4:3横向比例 */
+.card-image {
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: cover !important;
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* SVG Four-Line Writing Grid for print - 支持FourLineGrid组件 */
+.print-page svg {
+  display: block !important;
+  margin: 0 auto !important;
+  margin-bottom: 0px !important;
+  /* 移除固定尺寸，使用组件自身的响应式设计 */
+}
+
+/* Ensure SVG text renders properly in print - 优化字母间距 */
+.print-page svg text {
+  font-family: 'Comic Sans MS', 'Patrick Hand', 'Baloo 2', 'Fredoka', 'Schoolbell', 'Caveat', cursive !important;
+  font-weight: 600 !important;
+  fill: #000000 !important;
+  text-anchor: middle !important;
+  dominant-baseline: alphabetic !important;
+  /* 移除letterSpacing，使用代码计算的精确位置 */
+}
+
+.print-page svg tspan {
+  font-family: 'Patrick Hand', 'Comic Sans MS', 'Baloo 2', 'Fredoka', 'Schoolbell', 'Caveat', cursive !important;
+  font-weight: 600 !important;
+  fill: #000000 !important;
+}
+
+/* Ensure SVG lines render properly in print - 优化线条样式 */
+.print-page svg line {
+  stroke-width: 1 !important;
+  stroke-dasharray: 4,4 !important;
+}
+
+.print-page svg line[stroke="#555"] {
+  stroke: #555 !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4,4 !important;
+}
+
+.print-page svg line[stroke="#dc2626"] {
+  stroke: #dc2626 !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4,4 !important;
+}
+
+/* IPA styling for print - 优化与单词的距离 */
+.print-page .grid > div > div:nth-child(2) > p {
+  margin: 0 !important;
+  margin-top: 0px !important; /* 适中距离，既不太近也不太远 */
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  font-family: monospace !important;
+  text-align: center !important;
+}
+
+/* Definition styling for print */
+.print-page .grid > div > div:nth-child(3) > p {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+  color: #374151 !important;
+  font-weight: 400 !important;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Custom card styling */
+.word-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* SVG Four-Line Writing Grid styles */
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth transitions */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Loading animation for images */
+img {
+  transition: opacity 0.3s ease-in-out;
+}
+
+img:not([src]) {
+  opacity: 0;
+}
+
+/* Toast animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-bottom {
+  from {
+    transform: translateX(100%) translateY(20px);
+    opacity: 0;
+    scale: 0.95;
+  }
+  to {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Status indicator styles */
+.status-indicator {
+  position: relative;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.status-success::after {
+  background-color: #10b981;
+}
+
+.status-error::after {
+  background-color: #ef4444;
+}
+
+.status-loading::after {
+  background-color: #3b82f6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
