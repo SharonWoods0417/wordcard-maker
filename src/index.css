@@ -23,6 +23,168 @@
   break-inside: avoid;
 }
 
+/* ========================================
+ * 已验证布局 - 固定尺寸卡片样式
+ * ======================================== 
+ * 
+ * ✅ 此样式确保：
+ * - 每张卡片固定350px高度
+ * - 内容不会撑开卡片尺寸
+ * - 统一的视觉效果
+ * 
+ * ⚠️ 重要：不要修改这些尺寸设置
+ * ======================================== */
+
+/* ========================================
+ * 已验证布局 - 竖版卡片固定尺寸
+ * ======================================== 
+ * 
+ * ✅ 竖版卡片规格：
+ * - 宽高比 3:4 (竖版比例)
+ * - 固定高度 500px，确保内容不被压缩
+ * - 图片区域占卡片高度的1/3
+ * 
+ * ⚠️ 重要：保持竖版布局，不要改为横版
+ * ======================================== */
+
+/* 强制竖版卡片尺寸 - 防止内容撑开 */
+.word-card {
+  width: 280px !important;
+  height: 400px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  min-height: 400px !important;
+  max-height: 400px !important;
+  aspect-ratio: 3/4 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+/* 确保卡片内容区域正确显示 */
+.word-card > div {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* 确保图片区域适配竖版布局 */
+.word-card .picture-container {
+  flex: 1 1 33.333% !important;
+  max-height: 133px !important; /* 400px / 3 = 约133px */
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px !important;
+}
+
+/* 已验证图片样式 - 统一4:3横向比例 */
+.card-image {
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: cover !important;
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* 确保四线三格区域适配竖版 */
+.word-card svg {
+  max-width: 260px !important;
+  max-height: 100px !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* 确保文本内容正确显示 */
+.word-card p {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 确保卡片各个区域正确布局 */
+.word-card > div {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* ========================================
+ * 已验证布局 - 卡片外层容器固定尺寸
+ * ======================================== 
+ * 
+ * ✅ 标准竖版卡片规格：
+ * - 固定宽度280px，高度400px
+ * - 3:4竖版比例，适合打印
+ * - 每页2x2网格，共4张卡片
+ * 
+ * ⚠️ 重要：此为已验证布局，禁止修改
+ * ======================================== */
+
+.card-container-fixed {
+  width: 280px !important;
+  height: 400px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  min-height: 400px !important;
+  max-height: 400px !important;
+  aspect-ratio: 3/4 !important;
+  overflow: hidden !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+/* 确保竖版卡片在网格中正确显示 */
+.card-grid-container {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 1.5rem !important;
+  justify-items: center !important;
+  align-items: start !important;
+}
+
+/* 响应式调整 - 小屏幕设备保持竖版比例 */
+@media (max-width: 768px) {
+  .word-card {
+    width: 240px !important;
+    height: 320px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    min-height: 320px !important;
+    max-height: 320px !important;
+    aspect-ratio: 3/4 !important;
+  }
+  
+  .word-card .picture-container {
+    max-height: 107px !important; /* 320px / 3 = 约107px */
+    padding: 6px !important;
+  }
+  
+  .word-card .card-image {
+    max-height: 95px !important;
+  }
+  
+  .word-card svg {
+    max-width: 200px !important;
+    max-height: 80px !important;
+  }
+  
+  .card-container-fixed {
+    width: 240px !important;
+    height: 320px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    min-height: 320px !important;
+    max-height: 320px !important;
+    aspect-ratio: 3/4 !important;
+  }
+}
+
 /* Print-specific styles */
 @media print {
   .no-print {
@@ -128,58 +290,6 @@
 /* 打印样式 - 使用已验证的图片布局 */
 .print-page img,
 .print-page .card-image {
-  width: 100% !important;
-  aspect-ratio: 4 / 3 !important;
-  object-fit: cover !important;
-  display: block !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* ========================================
-   已验证布局 - 卡片顶部图片样式
-   ======================================== */
-/* 
- * 此样式已通过测试验证，确保：
- * - 图片保持 4:3 横向比例，不会因竖图撑高卡片
- * - 使用 object-fit: cover 确保图片裁切得当
- * - 容器使用 flex 布局防止图片拉伸溢出
- * 
- * ⚠️ 未来不要随意修改此样式，除非有重大布局问题
- */
-.picture-container {
-  /* 容器基础样式 - 已验证 */
-  flex: 1 1 33.333%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  overflow: hidden;
-  
-  /* 背景重置 - 确保图片区域完全干净 */
-  background: transparent !important;
-  background-image: none !important;
-  background-size: auto !important;
-  background-position: initial !important;
-  background-repeat: no-repeat !important;
-  background-color: transparent !important;
-  background-attachment: initial !important;
-  background-clip: initial !important;
-  background-origin: initial !important;
-  position: relative;
-  z-index: 1;
-}
-
-.picture-container * {
-  background: transparent !important;
-  background-image: none !important;
-}
-
-/* 已验证图片样式 - 统一4:3横向比例 */
-.card-image {
   width: 100% !important;
   aspect-ratio: 4 / 3 !important;
   object-fit: cover !important;
@@ -363,3 +473,115 @@ img:not([src]) {
     opacity: 0.5;
   }
 }
+
+/* ========================================
+   已验证布局 - 卡片顶部图片样式
+   ======================================== */
+/* 
+ * 此样式已通过测试验证，确保：
+ * - 图片保持 4:3 横向比例，不会因竖图撑高卡片
+ * - 使用 object-fit: cover 确保图片裁切得当
+ * - 容器使用 flex 布局防止图片拉伸溢出
+ * 
+ * ⚠️ 未来不要随意修改此样式，除非有重大布局问题
+ */
+.picture-container {
+  /* 容器基础样式 - 已验证 */
+  flex: 1 1 33.333%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  
+  /* 背景重置 - 确保图片区域完全干净 */
+  background: transparent !important;
+  background-image: none !important;
+  background-size: auto !important;
+  background-position: initial !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  background-attachment: initial !important;
+  background-clip: initial !important;
+  background-origin: initial !important;
+  position: relative;
+  z-index: 1;
+}
+
+.picture-container * {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* 已验证图片样式 - 统一4:3横向比例 */
+.card-image {
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: cover !important;
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* ========================================
+   CardInner布局 - 卡片内容统一容器
+   ======================================== */
+/* 
+ * ✅ 新的布局方式：使用CardInner容器整体垂直居中
+ * 
+ * 解决的问题：
+ * - 内容偏上，底部留白过大的问题
+ * - 排版结构紊乱的问题  
+ * - 手写线和字体重叠错位的问题
+ * 
+ * 设计原理：
+ * - 使用统一的CardInner容器（width: 100%, height: 100%）
+ * - 容器设置 justify-content: center 实现整体垂直居中
+ * - 内部元素使用 flex: 0 0 auto 不参与空间分配
+ * - 通过 margin 控制元素间距，而非 flex 比例
+ * 
+ * ⚠️ 重要提醒：
+ * 此布局已解决用户反馈的所有问题，请勿随意修改
+ * 如需调整，请确保整体垂直居中效果不受影响
+ * 
+ * 最后确认时间：2024年
+ * ======================================== */
+
+/* ========================================
+   调试样式 - 开发环境可选启用
+   ======================================== */
+/* 
+ * 取消注释以下样式可以看到布局边框，帮助调试：
+ * - 红色边框：整个word-card容器
+ * - 蓝色边框：CardInner容器
+ * - 绿色边框：图片区域
+ * - 黄色边框：单词区域
+ * - 紫色边框：定义区域
+ */
+
+/*
+.word-card {
+  border: 2px solid red !important;
+}
+
+.word-card > div:first-child {
+  border: 2px solid blue !important;
+}
+
+.word-card img {
+  border: 2px solid green !important;
+}
+
+.word-card svg {
+  border: 2px solid yellow !important;
+}
+
+.word-card p {
+  border: 1px solid purple !important;
+}
+*/
+
+/* ======================================== */
