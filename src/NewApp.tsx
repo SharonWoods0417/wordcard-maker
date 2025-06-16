@@ -100,6 +100,7 @@ function NewApp() {
   const [status, setStatus] = useState<AppStatus>('idle');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [uploadedWordCount, setUploadedWordCount] = useState(0);
+  const [parsedWords, setParsedWords] = useState<WordData[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const CARDS_PER_PAGE = 4;
@@ -172,6 +173,7 @@ function NewApp() {
           }
 
           setUploadedWordCount(validWords.length);
+          setParsedWords(validWords);
           setWords([]);
           setCurrentPage(0);
           setStatus('uploaded');
@@ -196,65 +198,52 @@ function NewApp() {
       }
     });
 
-    // Reset file input
-    if (event.target) {
-      event.target.value = '';
-    }
+    // Don't reset file input here - we need it for generation
+    // Reset only on successful generation or when uploading new file
   };
 
   const handleGenerateCards = async () => {
-    if (uploadedWordCount === 0) return;
+    if (parsedWords.length === 0) {
+      addToast('error', '❌ 请先上传CSV文件');
+      return;
+    }
 
     setStatus('generating');
-    addToast('info', '🔄 正在生成单词卡片...');
+    addToast('info', '⚙️ 正在处理单词数据...');
 
     try {
-      // Re-parse the file to get the words
-      const file = fileInputRef.current?.files?.[0];
-      if (!file) return;
-
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          try {
-            const parsedWords = results.data as WordData[];
-            const validWords = parsedWords.filter(word => word.Word && word.Word.trim());
-            
-            const completedWords: ProcessedWordData[] = [];
-            
-            for (let i = 0; i < validWords.length; i++) {
-              const completed = await autoCompleteWord(validWords[i]);
-              completedWords.push(completed);
-              
-              // Update progress
-              const progress = Math.round(((i + 1) / validWords.length) * 100);
-              addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${validWords.length})`);
-              
-              // Small delay to show progress
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            setWords(completedWords);
-            setStatus('generated');
-            clearToastsByType('info');
-            setTimeout(() => {
-              addToast('success', `✅ 成功生成 ${completedWords.length} 张单词卡片！`);
-            }, 100);
-          } catch (error) {
-            setStatus('generationError');
-            clearToastsByType('info');
-            setTimeout(() => {
-              addToast('error', '❌ 生成失败：' + (error as Error).message);
-            }, 100);
-          }
+      const completedWords: ProcessedWordData[] = [];
+      
+      // Process words with progress feedback
+      for (let i = 0; i < parsedWords.length; i++) {
+        const word = parsedWords[i];
+        const completed = await autoCompleteWord(word);
+        completedWords.push(completed);
+        
+        // Update progress every few words to avoid spamming toasts
+        if (i % 3 === 0 || i === parsedWords.length - 1) {
+          const progress = Math.round(((i + 1) / parsedWords.length) * 100);
+          clearToastsByType('info');
+          addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${parsedWords.length})`);
         }
-      });
+        
+        // Add small delay to show progress and avoid overwhelming
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      setWords(completedWords);
+      setCurrentPage(0);
+      setStatus('generated');
+      clearToastsByType('info');
+      setTimeout(() => {
+        addToast('success', `✅ 单词卡片处理完成！共生成 ${completedWords.length} 张卡片`);
+      }, 100);
     } catch (error) {
+      console.error('Error during generation:', error);
       setStatus('generationError');
       clearToastsByType('info');
       setTimeout(() => {
-        addToast('error', '❌ 生成失败：' + (error as Error).message);
+        addToast('error', '❌ 处理失败，请检查数据格式。');
       }, 100);
     }
   };
@@ -321,14 +310,45 @@ function NewApp() {
         ) : (
           // Show existing card generation interface (保持原有逻辑)
           <div className="max-w-7xl mx-auto px-4 space-y-6">
-            {/* 这里可以放置原有的卡片显示和操作界面 */}
+            {/* Status indicator for debugging */}
+            <div className="text-center mb-4">
+              <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                状态: {status} | 已解析: {parsedWords.length} | 已生成: {words.length}
+              </span>
+            </div>
+            
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                单词卡片预览
-              </h2>
-              <p className="text-gray-600 mb-6">
-                已生成 {words.length} 张卡片，当前显示第 {currentPage + 1} 页，共 {totalPages} 页
-              </p>
+              <div className="flex items-center justify-center mb-4">
+                <button
+                  onClick={() => {
+                    setStatus('idle');
+                    setWords([]);
+                    setParsedWords([]);
+                    setUploadedWordCount(0);
+                    setCurrentPage(0);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
+                  className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors mr-4"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  返回主页
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  单词卡片预览
+                </h2>
+              </div>
+              {status === 'generating' ? (
+                <p className="text-blue-600 mb-6 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  正在生成单词卡片，请稍候...
+                </p>
+              ) : (
+                <p className="text-gray-600 mb-6">
+                  已生成 {words.length} 张卡片，当前显示第 {currentPage + 1} 页，共 {totalPages} 页
+                </p>
+              )}
             </div>
             
             {/* 这里应该显示WordCard组件等 */}
