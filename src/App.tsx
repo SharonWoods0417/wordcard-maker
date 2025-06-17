@@ -19,6 +19,11 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { WordCard } from './components/WordCard';
 import { PrintPage } from './components/PrintPage';
+import { Header } from './components/Header';
+import { HeroSection } from './components/HeroSection';
+import { FeaturesSection } from './components/FeaturesSection';
+import { CSVGuideSection } from './components/CSVGuideSection';
+import { showWordConfirmationModal } from './utils/boltModalIntegration';
 
 // Types
 interface WordData {
@@ -90,14 +95,13 @@ const Toast: React.FC<{
   );
 };
 
-
-
 function App() {
   const [words, setWords] = useState<ProcessedWordData[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [status, setStatus] = useState<AppStatus>('idle');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [uploadedWordCount, setUploadedWordCount] = useState(0);
+  const [parsedWords, setParsedWords] = useState<WordData[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const CARDS_PER_PAGE = 4;
@@ -108,26 +112,35 @@ function App() {
     const id = Date.now().toString();
     const newToast: ToastMessage = { id, type, message };
     
-    // Limit to maximum 4 toasts to prevent screen clutter
     setToasts(prev => {
       const newToasts = [...prev, newToast];
       return newToasts.length > 4 ? newToasts.slice(1) : newToasts;
     });
     
-    // Auto-remove toast after different durations based on type
     const duration = type === 'error' ? 7000 : type === 'info' ? 4000 : 5000;
     setTimeout(() => {
       removeToast(id);
     }, duration);
   };
 
-  // Clear toasts by type (useful for clearing progress toasts)
   const clearToastsByType = (type: ToastMessage['type']) => {
     setToasts(prev => prev.filter(toast => toast.type !== type));
   };
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  // 弹窗处理函数
+  const handleWordConfirmation = (selectedWordData?: any[]) => {
+    if (selectedWordData && selectedWordData.length > 0) {
+      setParsedWords(selectedWordData);
+      addToast('success', `✅ 已确认处理 ${selectedWordData.length} 个单词，点击"Generate"开始生成卡片`);
+    }
+  };
+
+  const handleWordCancellation = () => {
+    addToast('info', '📋 已取消单词处理');
   };
 
   // Auto-complete missing fields using local resources
@@ -139,14 +152,11 @@ function App() {
       Example: word.Example || `This is an example sentence with ${word.Word}.`,
       Example_CN: word.Example_CN || `这是一个包含 ${word.Word} 的例句。`,
       Definition_CN: word.Definition_CN || `n. ${word.Word}的中文释义`,
-      // Use local media resources if available, otherwise use filename format
       Audio: word.Audio ? (word.Audio.startsWith('/media/') ? word.Audio : `/media/${word.Audio}`) : `/media/${word.Word.toLowerCase()}.mp3`,
       Picture: word.Picture ? (word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`) : `/media/${word.Word.toLowerCase()}.jpg`
     };
 
-    // No external API calls during testing phase
     console.log(`Generated card for: ${word.Word} using local resources`);
-
     return completed;
   };
 
@@ -164,30 +174,37 @@ function App() {
       complete: (results) => {
         try {
           const parsedWords = results.data as WordData[];
-          
-          // Validate that we have at least Word column
           const validWords = parsedWords.filter(word => word.Word && word.Word.trim());
           
           if (validWords.length === 0) {
             setStatus('uploadError');
-            clearToastsByType('info'); // 清除解析中提示
+            clearToastsByType('info');
             setTimeout(() => {
               addToast('error', '❌ 解析失败：CSV中没有找到有效单词。请确保包含"Word"列。');
             }, 100);
             return;
           }
 
+          // 显示确认弹窗
+          clearToastsByType('info');
+          showWordConfirmationModal(
+            validWords,
+            handleWordConfirmation,
+            handleWordCancellation
+          );
+          
+          // 设置初始状态
           setUploadedWordCount(validWords.length);
-          setWords([]); // Clear existing words
+          setWords([]);
           setCurrentPage(0);
           setStatus('uploaded');
-          clearToastsByType('info'); // 清除解析中提示
+          
           setTimeout(() => {
-            addToast('success', `✅ CSV解析成功！已识别 ${validWords.length} 个单词`);
+            addToast('success', `✅ CSV解析成功！已识别 ${validWords.length} 个单词，请在弹窗中确认处理`);
           }, 100);
         } catch (error) {
           setStatus('uploadError');
-          clearToastsByType('info'); // 清除解析中提示
+          clearToastsByType('info');
           setTimeout(() => {
             addToast('error', '❌ 解析失败：CSV格式无效。');
           }, 100);
@@ -195,214 +212,88 @@ function App() {
       },
       error: (error) => {
         setStatus('uploadError');
-        clearToastsByType('info'); // 清除解析中提示
+        clearToastsByType('info');
         setTimeout(() => {
           addToast('error', '❌ 解析失败：' + error.message);
         }, 100);
       }
     });
+
+    // Don't reset file input here - we need it for generation
+    // Reset only on successful generation or when uploading new file
   };
 
-  // Generate cards with auto-completion
   const handleGenerateCards = async () => {
-    if (!fileInputRef.current?.files?.[0]) {
+    if (parsedWords.length === 0) {
       addToast('error', '❌ 请先上传CSV文件');
       return;
     }
 
     setStatus('generating');
     addToast('info', '⚙️ 正在处理单词数据...');
-    
+
     try {
-      const file = fileInputRef.current.files[0];
+      const completedWords: ProcessedWordData[] = [];
       
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          try {
-            const parsedWords = results.data as WordData[];
-            const validWords = parsedWords.filter(word => word.Word && word.Word.trim());
-            const completedWords: ProcessedWordData[] = [];
-
-            // Process words in batches to avoid overwhelming APIs
-            for (let i = 0; i < validWords.length; i++) {
-              const word = validWords[i];
-              const completed = await autoCompleteWord(word);
-              completedWords.push(completed);
-              
-              // Add small delay to be respectful to APIs
-              if (i % 5 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-              }
-            }
-
-            setWords(completedWords);
-            setCurrentPage(0);
-            setStatus('generated');
-            clearToastsByType('info'); // 清除处理中提示
-            setTimeout(() => {
-              addToast('success', `✅ 单词卡片处理完成！共生成 ${completedWords.length} 张卡片`);
-            }, 100);
-          } catch (error) {
-            console.error('Error during generation:', error);
-            setStatus('generationError');
-            clearToastsByType('info'); // 清除处理中提示
-            setTimeout(() => {
-              addToast('error', '❌ 处理失败，请检查数据格式。');
-            }, 100);
-          }
-        },
-        error: (error) => {
-          setStatus('generationError');
-          clearToastsByType('info'); // 清除处理中提示
-          setTimeout(() => {
-            addToast('error', '❌ 处理失败：' + error.message);
-          }, 100);
+      // Process words with progress feedback
+      for (let i = 0; i < parsedWords.length; i++) {
+        const word = parsedWords[i];
+        const completed = await autoCompleteWord(word);
+        completedWords.push(completed);
+        
+        // Update progress every few words to avoid spamming toasts
+        if (i % 3 === 0 || i === parsedWords.length - 1) {
+          const progress = Math.round(((i + 1) / parsedWords.length) * 100);
+          clearToastsByType('info');
+          addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${parsedWords.length})`);
         }
-      });
+        
+        // Add small delay to show progress and avoid overwhelming
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      setWords(completedWords);
+      setCurrentPage(0);
+      setStatus('generated');
+      clearToastsByType('info');
+      setTimeout(() => {
+        addToast('success', `✅ 单词卡片处理完成！共生成 ${completedWords.length} 张卡片`);
+      }, 100);
     } catch (error) {
-      console.error('Error generating cards:', error);
+      console.error('Error during generation:', error);
       setStatus('generationError');
-      clearToastsByType('info'); // 清除处理中提示
+      clearToastsByType('info');
       setTimeout(() => {
         addToast('error', '❌ 处理失败，请检查数据格式。');
       }, 100);
     }
   };
 
-  // Download completed CSV in Anki format
-  const handleDownloadCSV = () => {
-    if (words.length === 0) {
-      addToast('error', '❌ 没有可导出的卡片');
-      return;
-    }
-
-    try {
-      // Transform words data to Anki format
-      const ankiFormattedWords = words.map(word => {
-        // Extract filename from path for proper Anki format
-        const getFileName = (filePath: string) => {
-          if (filePath.startsWith('/media/')) {
-            return filePath.replace('/media/', '');
-          }
-          return filePath;
-        };
-
-        return {
-          ...word,
-          // Transform Audio field to Anki format: [sound:filename.mp3]
-          Audio: word.Audio ? `[sound:${getFileName(word.Audio)}]` : '',
-          // Transform Picture field to Anki format: <img src="filename.jpg">
-          Picture: word.Picture ? `<img src="${getFileName(word.Picture)}">` : ''
-        };
-      });
-
-      const csv = Papa.unparse(ankiFormattedWords);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'anki_word_cards.csv';
-      link.click();
-      addToast('success', '✅ Anki格式CSV下载成功！');
-    } catch (error) {
-      addToast('error', '❌ CSV下载失败');
-    }
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
-  // Download images as ZIP
-  const handleDownloadImages = async () => {
-    if (words.length === 0) {
-      addToast('error', '❌ 没有可导出的卡片');
-      return;
-    }
-
-    setStatus('exporting');
-    addToast('info', '📁 正在准备图片下载...');
-    const zip = new JSZip();
-
-    try {
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        try {
-          // Handle local media resources
-          const imagePath = word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`;
-          const response = await fetch(imagePath);
-          if (response.ok) {
-            const blob = await response.blob();
-            zip.file(`${word.Word.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, blob);
-          }
-        } catch (error) {
-          console.log(`Failed to download image for ${word.Word}: ${word.Picture}`);
-        }
-      }
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = 'word_card_images.zip';
-      link.click();
-      clearToastsByType('info'); // 清除导出中提示
-      setTimeout(() => {
-        addToast('success', '✅ 图片下载成功！');
-      }, 100);
-    } catch (error) {
-      clearToastsByType('info'); // 清除导出中提示
-      setTimeout(() => {
-        addToast('error', '❌ 创建图片压缩包失败');
-      }, 100);
-    } finally {
-      setStatus('generated');
-    }
+  const handleViewExample = () => {
+    addToast('info', '📖 示例CSV将在新标签页中打开');
+    // 这里可以实现打开示例CSV的逻辑
   };
 
-  // Download audio as ZIP
-  const handleDownloadAudio = async () => {
-    if (words.length === 0) {
-      addToast('error', '❌ 没有可导出的卡片');
-      return;
-    }
-
-    setStatus('exporting');
-    addToast('info', '🔊 正在准备音频下载...');
-    const zip = new JSZip();
-
-    try {
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        try {
-          // Handle local media resources
-          const audioPath = word.Audio.startsWith('/media/') ? word.Audio : `/media/${word.Audio}`;
-          const response = await fetch(audioPath);
-          if (response.ok) {
-            const blob = await response.blob();
-            zip.file(`${word.Word.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`, blob);
-          }
-        } catch (error) {
-          console.log(`Failed to download audio for ${word.Word}: ${word.Audio}`);
-        }
-      }
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = 'word_card_audio.zip';
-      link.click();
-      clearToastsByType('info'); // 清除导出中提示
-      setTimeout(() => {
-        addToast('success', '✅ 音频文件下载成功！');
-      }, 100);
-    } catch (error) {
-      clearToastsByType('info'); // 清除导出中提示
-      setTimeout(() => {
-        addToast('error', '❌ 创建音频压缩包失败');
-      }, 100);
-    } finally {
-      setStatus('generated');
-    }
+  const handleDownloadTemplate = () => {
+    const csvContent = 'Word\napple\nbook\ncomputer\nhello\nworld';
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'word_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    addToast('success', '📥 模板下载成功！');
   };
 
-  // Export to PDF
+  // PDF导出功能
   const handleExportPDF = async () => {
     if (words.length === 0) {
       addToast('error', '❌ 没有可导出的卡片');
@@ -415,7 +306,7 @@ function App() {
     try {
       const printPages = document.querySelectorAll('.print-page');
       if (printPages.length === 0) {
-        clearToastsByType('info'); // 清除生成中提示
+        clearToastsByType('info');
         addToast('error', '❌ 没有可导出的内容');
         return;
       }
@@ -433,7 +324,7 @@ function App() {
         const pageHeight = Math.round(297 * 3.779527559); // 1123px
         
         const canvas = await html2canvas(page, {
-          scale: 1.5, // Reduced scale for better performance and accuracy
+          scale: 1.5,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -443,10 +334,9 @@ function App() {
           scrollY: 0,
           windowWidth: pageWidth,
           windowHeight: pageHeight,
-          foreignObjectRendering: false, // Better CSS rendering
+          foreignObjectRendering: false,
           logging: false,
           onclone: function(clonedDoc) {
-            // Ensure styles are applied in cloned document
             const clonedPage = clonedDoc.querySelector('.print-page') as HTMLElement;
             if (clonedPage) {
               clonedPage.style.width = '210mm';
@@ -478,18 +368,17 @@ function App() {
           pdf.addPage();
         }
         
-        // Add image to PDF with exact A4 dimensions
         pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
       }
 
       pdf.save('word_cards_complete.pdf');
-      clearToastsByType('info'); // 清除导出中提示
+      clearToastsByType('info');
       setTimeout(() => {
         addToast('success', '✅ PDF导出成功！');
       }, 100);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      clearToastsByType('info'); // 清除导出中提示
+      clearToastsByType('info');
       setTimeout(() => {
         addToast('error', '❌ PDF生成失败，请重试。');
       }, 100);
@@ -501,246 +390,178 @@ function App() {
   const handlePrevPage = () => {
     setCurrentPage(prev => Math.max(0, prev - 1));
   };
-  
+
   const handleNextPage = () => {
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   };
 
-  const isLoading = status === 'uploading' || status === 'generating' || status === 'exporting';
-
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <Header 
+        onUploadClick={handleUploadClick}
+        onGenerateClick={handleGenerateCards}
+        onExportPDF={handleExportPDF}
+        status={status}
+        uploadedWordCount={uploadedWordCount}
+        wordsGenerated={words.length}
+      />
+
+      {/* Main Content */}
+      <div className="pt-24 pb-8">
+        {status === 'idle' || status === 'uploading' || status === 'uploaded' || status === 'uploadError' ? (
+          // Show new homepage
+          <div className="max-w-7xl mx-auto">
+            <HeroSection 
+              onFileUpload={handleFileUpload}
+              fileInputRef={fileInputRef}
+              status={status}
+            />
+            <FeaturesSection />
+            <CSVGuideSection 
+              onViewExample={handleViewExample}
+              onDownloadTemplate={handleDownloadTemplate}
+            />
+          </div>
+        ) : (
+          // Show existing card generation interface (保持原有逻辑)
+          <div className="max-w-7xl mx-auto px-4 space-y-6">
+            {/* Status indicator for debugging */}
+            <div className="text-center mb-4">
+              <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                状态: {status} | 已解析: {parsedWords.length} | 已生成: {words.length}
+              </span>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-4">
+                <button
+                  onClick={() => {
+                    setStatus('idle');
+                    setWords([]);
+                    setParsedWords([]);
+                    setUploadedWordCount(0);
+                    setCurrentPage(0);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
+                  className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors mr-4"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  返回主页
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  单词卡片预览
+                </h2>
+              </div>
+              {status === 'generating' ? (
+                <p className="text-blue-600 mb-6 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  正在生成单词卡片，请稍候...
+                </p>
+              ) : (
+                <p className="text-gray-600 mb-6">
+                  已生成 {words.length} 张卡片，当前显示第 {currentPage + 1} 页，共 {totalPages} 页
+                </p>
+              )}
+            </div>
+            
+            {/* ========================================
+             * 已验证布局 - 固定尺寸卡片显示区域
+             * ======================================== 
+             * 
+             * ✅ 此版本确保：
+             * - 每页固定显示4张卡片（2x2布局）
+             * - 每张卡片固定尺寸，不随内容变化
+             * - 统一的视觉效果和打印布局
+             * 
+             * ⚠️ 重要：不要修改此布局结构
+             * ======================================== */}
+            {words.length > 0 && (
+              <div className="max-w-7xl mx-auto px-4">
+                {/* Page Navigation */}
+                <div className="flex items-center justify-center space-x-4 mb-6 no-print">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 0}
+                    className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    上一页
+                  </button>
+                  
+                  <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md font-medium">
+                    第 {currentPage + 1} 页，共 {totalPages} 页
+                  </span>
+                  
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage >= totalPages - 1}
+                    className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    下一页
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </button>
+                </div>
+
+                {/* Page Info */}
+                <div className="text-center mb-6 no-print">
+                  <p className="text-gray-600">
+                    显示卡片 {currentPage * CARDS_PER_PAGE + 1} 到 {Math.min((currentPage + 1) * CARDS_PER_PAGE, words.length)}，共 {words.length} 张
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    每页包含正面和背面，适合打印制作实体卡片
+                  </p>
+                </div>
+
+                {/* Print Pages Container - 使用PrintPage组件确保PDF导出正常 */}
+                <div className="space-y-8">
+                  {/* Front Side Page */}
+                  <PrintPage 
+                    words={words}
+                    side="front"
+                    pageNumber={currentPage}
+                  />
+                  
+                  {/* Back Side Page */}
+                  <PrintPage 
+                    words={words}
+                    side="back"
+                    pageNumber={currentPage}
+                  />
+                </div>
+                
+                {/* Print Instructions */}
+                <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg no-print">
+                  <h3 className="font-semibold text-yellow-800 mb-2">📖 打印说明：</h3>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    <li>• 先打印正面页，然后翻转纸张打印背面页</li>
+                    <li>• 使用A4纸张获得最佳效果</li>
+                    <li>• 每页包含4张A6格式的卡片</li>
+                    <li>• 打印后沿卡片边框裁切</li>
+                    <li>• 点击PDF按钮下载高质量打印文件</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Toast Container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-3 pointer-events-none">
+      <div className="fixed bottom-6 right-6 space-y-2 pointer-events-none z-50">
         {toasts.map((toast, index) => (
           <Toast 
             key={toast.id} 
             toast={toast} 
-            onClose={removeToast}
+            onClose={removeToast} 
             index={index}
           />
         ))}
-      </div>
-
-      {/* Fixed Header with Controls */}
-      <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 no-print">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center space-x-4">
-              <BookText className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-800">Word Card Maker</h1>
-              {words.length > 0 && (
-                <span className="text-sm text-gray-500">
-                  ({words.length} cards generated)
-                </span>
-              )}
-              {uploadedWordCount > 0 && words.length === 0 && (
-                <span className="text-sm text-orange-600">
-                  ({uploadedWordCount} words uploaded, ready to generate)
-                </span>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-2 flex-wrap">
-              {/* Upload CSV */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={isLoading}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-              >
-                {status === 'uploading' ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4 mr-1" />
-                )}
-                Upload CSV
-              </button>
-              
-              {/* Generate Cards */}
-              <button
-                onClick={handleGenerateCards}
-                disabled={isLoading || status === 'idle'}
-                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-              >
-                {status === 'generating' ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Settings className="w-4 h-4 mr-1" />
-                )}
-                Generate
-              </button>
-              
-              {words.length > 0 && (
-                <>
-                  {/* Download CSV */}
-                  <button
-                    onClick={handleDownloadCSV}
-                    disabled={isLoading}
-                    className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    CSV
-                  </button>
-                  
-                  {/* Download Images */}
-                  <button
-                    onClick={handleDownloadImages}
-                    disabled={isLoading}
-                    className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    {status === 'exporting' ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Image className="w-4 h-4 mr-1" />
-                    )}
-                    Images
-                  </button>
-                  
-                  {/* Download Audio */}
-                  <button
-                    onClick={handleDownloadAudio}
-                    disabled={isLoading}
-                    className="flex items-center px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    {status === 'exporting' ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Volume2 className="w-4 h-4 mr-1" />
-                    )}
-                    Audio
-                  </button>
-                  
-                  {/* Download PDF */}
-                  <button
-                    onClick={handleExportPDF}
-                    disabled={isLoading}
-                    className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    {status === 'exporting' ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4 mr-1" />
-                    )}
-                    PDF
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="pt-24 pb-8">
-        <div className="max-w-7xl mx-auto">
-          {words.length === 0 ? (
-            <div className="text-center py-16">
-              <BookText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-600 mb-2">Welcome to Word Card Maker</h2>
-              <p className="text-gray-500 mb-6">
-                {status === 'uploaded' 
-                  ? `${uploadedWordCount} words uploaded! Click "Generate" to create your cards.`
-                  : 'Upload a CSV file with your words to get started'
-                }
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-2xl mx-auto text-left">
-                <h3 className="font-semibold text-blue-800 mb-3">📋 CSV Format Requirements:</h3>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• <strong>Required:</strong> Word column</li>
-                  <li>• <strong>Optional:</strong> Definition, IPA, Example, Example_CN, Definition_CN, Audio, Picture</li>
-                  <li>• Missing fields will be auto-completed using APIs and stock images</li>
-                  <li>• Example: <code>Word,Definition,IPA</code></li>
-                  <li>• Or just: <code>Word</code> (everything else will be generated)</li>
-                </ul>
-              </div>
-              
-              {status === 'uploaded' && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg max-w-2xl mx-auto">
-                  <p className="text-green-800 font-medium">
-                    ✅ Ready to generate! Click the "Generate" button to create your word cards.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Page Navigation */}
-              <div className="flex items-center justify-center space-x-4 mb-6 no-print">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 0}
-                  className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
-                </button>
-                
-                <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md font-medium">
-                  Page {currentPage + 1} of {totalPages}
-                </span>
-                
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage >= totalPages - 1}
-                  className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              </div>
-
-              {/* Page Info */}
-              <div className="text-center mb-6 no-print">
-                <p className="text-gray-600">
-                  Showing cards {currentPage * CARDS_PER_PAGE + 1} to {Math.min((currentPage + 1) * CARDS_PER_PAGE, words.length)} of {words.length}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Each page contains front sides followed by corresponding back sides for printing
-                </p>
-              </div>
-
-              {/* Print Pages Container */}
-              <div className="space-y-8">
-                {/* Front Side Page */}
-                <PrintPage 
-                  words={words}
-                  side="front"
-                  pageNumber={currentPage}
-                />
-                
-                {/* Back Side Page */}
-                <PrintPage 
-                  words={words}
-                  side="back"
-                  pageNumber={currentPage}
-                />
-              </div>
-              
-              {/* Print Instructions */}
-              <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg no-print">
-                <h3 className="font-semibold text-yellow-800 mb-2">📖 Printing Instructions:</h3>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Print the front page first, then flip the paper and print the back page</li>
-                  <li>• Use A4 paper size for best results</li>
-                  <li>• Each page contains 4 cards in A6 format</li>
-                  <li>• Cut along the card borders after printing</li>
-                  <li>• Download PDF for high-quality printing</li>
-                </ul>
-              </div>
-            </>
-          )}
-        </div>
       </div>
     </div>
   );
 }
 
-export default App;
+export default App; 
