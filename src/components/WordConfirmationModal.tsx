@@ -77,6 +77,22 @@ const WordConfirmationModal: React.FC<WordConfirmationModalProps> = ({
     }
   }, [lastAddedWord, selectedWords.length]);
 
+  // 控制背景页面滚动
+  useEffect(() => {
+    if (isOpen) {
+      // 禁用背景页面滚动
+      document.body.style.overflow = 'hidden';
+    } else {
+      // 恢复背景页面滚动
+      document.body.style.overflow = 'unset';
+    }
+
+    // 清理函数：组件卸载时恢复滚动
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const handleRemoveWord = (wordToRemove: string) => {
     setSelectedWords(prev => prev.filter(word => word !== wordToRemove));
   };

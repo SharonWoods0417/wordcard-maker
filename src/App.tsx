@@ -23,6 +23,7 @@ import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesSection } from './components/FeaturesSection';
 import { CSVGuideSection } from './components/CSVGuideSection';
+import ManualInputModal from './components/ManualInputModal';
 import { showWordConfirmationModal } from './utils/boltModalIntegration';
 
 // Types
@@ -102,6 +103,7 @@ function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [uploadedWordCount, setUploadedWordCount] = useState(0);
   const [parsedWords, setParsedWords] = useState<WordData[]>([]);
+  const [isManualInputOpen, setIsManualInputOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const CARDS_PER_PAGE = 4;
@@ -131,16 +133,49 @@ function App() {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  // 弹窗处理函数
-  const handleWordConfirmation = (selectedWordData?: any[]) => {
+  // 弹窗处理函数 - 优化后直接生成卡片
+  const handleWordConfirmation = async (selectedWordData?: any[]) => {
     if (selectedWordData && selectedWordData.length > 0) {
       setParsedWords(selectedWordData);
-      addToast('success', `✅ 已确认处理 ${selectedWordData.length} 个单词，点击"Generate"开始生成卡片`);
+      addToast('success', `✅ 已确认处理 ${selectedWordData.length} 个单词，正在生成卡片...`);
+      
+      // 直接开始生成卡片，无需用户再点击Generate按钮
+      setTimeout(async () => {
+        await handleGenerateCardsInternal(selectedWordData);
+      }, 500); // 给用户一点时间看到确认消息
     }
   };
 
   const handleWordCancellation = () => {
     addToast('info', '📋 已取消单词处理');
+    // 取消时也要重置状态，返回初始状态
+    setTimeout(() => {
+      resetAppState();
+      setStatus('idle');
+    }, 1000); // 给用户时间看到取消消息
+  };
+
+  // 状态重置函数 - 清理之前的状态，确保干净的开始
+  const resetAppState = () => {
+    console.log('🔄 重置应用状态...');
+    
+    // 清理所有状态
+    setWords([]);
+    setParsedWords([]);
+    setCurrentPage(0);
+    setUploadedWordCount(0);
+    
+    // 清理所有通知
+    clearToastsByType('success');
+    clearToastsByType('error');
+    clearToastsByType('info');
+    
+    // 重置文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    console.log('✅ 应用状态已重置');
   };
 
   // Auto-complete missing fields using local resources
@@ -165,6 +200,9 @@ function App() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // 重置应用状态，确保干净的开始
+    resetAppState();
+    
     setStatus('uploading');
     addToast('info', '📄 正在解析CSV文件...');
 
@@ -223,12 +261,8 @@ function App() {
     // Reset only on successful generation or when uploading new file
   };
 
-  const handleGenerateCards = async () => {
-    if (parsedWords.length === 0) {
-      addToast('error', '❌ 请先上传CSV文件');
-      return;
-    }
-
+  // 内部卡片生成函数 - 接受单词数据参数
+  const handleGenerateCardsInternal = async (wordsToProcess: WordData[]) => {
     setStatus('generating');
     addToast('info', '⚙️ 正在处理单词数据...');
 
@@ -236,16 +270,16 @@ function App() {
       const completedWords: ProcessedWordData[] = [];
       
       // Process words with progress feedback
-      for (let i = 0; i < parsedWords.length; i++) {
-        const word = parsedWords[i];
+      for (let i = 0; i < wordsToProcess.length; i++) {
+        const word = wordsToProcess[i];
         const completed = await autoCompleteWord(word);
         completedWords.push(completed);
         
         // Update progress every few words to avoid spamming toasts
-        if (i % 3 === 0 || i === parsedWords.length - 1) {
-          const progress = Math.round(((i + 1) / parsedWords.length) * 100);
+        if (i % 3 === 0 || i === wordsToProcess.length - 1) {
+          const progress = Math.round(((i + 1) / wordsToProcess.length) * 100);
           clearToastsByType('info');
-          addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${parsedWords.length})`);
+          addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${wordsToProcess.length})`);
         }
         
         // Add small delay to show progress and avoid overwhelming
@@ -269,8 +303,53 @@ function App() {
     }
   };
 
+  // 保留原Generate按钮的兼容性（如果需要手动触发）
+  const handleGenerateCards = async () => {
+    if (parsedWords.length === 0) {
+      addToast('error', '❌ 请先上传CSV文件');
+      return;
+    }
+    await handleGenerateCardsInternal(parsedWords);
+  };
+
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // 手动输入处理函数
+  const handleManualInput = () => {
+    resetAppState(); // 重置状态
+    setIsManualInputOpen(true);
+  };
+
+  // 手动输入确认处理
+  const handleManualInputConfirm = (words: string[]) => {
+    setIsManualInputOpen(false);
+    
+    // 转换为WordData格式
+    const wordDataList: WordData[] = words.map(word => ({
+      Word: word.trim()
+      // 其他字段将在后续自动补全
+    }));
+
+    // 设置状态并显示确认弹窗
+    setUploadedWordCount(wordDataList.length);
+    setStatus('uploaded');
+    
+    addToast('success', `✅ 已输入 ${wordDataList.length} 个单词，请在弹窗中确认处理`);
+    
+    // 显示确认弹窗
+    showWordConfirmationModal(
+      wordDataList,
+      handleWordConfirmation,
+      handleWordCancellation
+    );
+  };
+
+  // 手动输入取消处理
+  const handleManualInputCancel = () => {
+    setIsManualInputOpen(false);
+    addToast('info', '📝 已取消手动输入');
   };
 
   const handleViewExample = () => {
@@ -415,6 +494,7 @@ function App() {
             <HeroSection 
               onFileUpload={handleFileUpload}
               fileInputRef={fileInputRef}
+              onManualInput={handleManualInput}
               status={status}
             />
             <FeaturesSection />
@@ -437,14 +517,8 @@ function App() {
               <div className="flex items-center justify-center mb-4">
                 <button
                   onClick={() => {
+                    resetAppState();
                     setStatus('idle');
-                    setWords([]);
-                    setParsedWords([]);
-                    setUploadedWordCount(0);
-                    setCurrentPage(0);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = '';
-                    }
                   }}
                   className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors mr-4"
                 >
@@ -560,6 +634,13 @@ function App() {
           />
         ))}
       </div>
+
+      {/* Manual Input Modal */}
+      <ManualInputModal
+        isOpen={isManualInputOpen}
+        onConfirm={handleManualInputConfirm}
+        onCancel={handleManualInputCancel}
+      />
     </div>
   );
 }

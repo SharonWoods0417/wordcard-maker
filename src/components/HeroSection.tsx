@@ -1,15 +1,17 @@
 import React from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Edit3, FileText, FolderOpen } from 'lucide-react';
 
 interface HeroSectionProps {
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
+  onManualInput: () => void;
   status: string;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   onFileUpload, 
   fileInputRef, 
+  onManualInput,
   status 
 }) => {
   const handleUploadClick = () => {
@@ -36,45 +38,104 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </p>
         </div>
 
-        {/* Upload Area */}
+        {/* 双入口选择区域 */}
         <div className="mb-12">
-          <div 
-            className="border-2 border-dashed border-blue-300 rounded-2xl p-12 bg-white/50 hover:bg-white/80 transition-all duration-300 cursor-pointer group"
-            onClick={handleUploadClick}
-          >
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                <Upload className="w-8 h-8 text-blue-600" />
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">选择您的起始方式</h2>
+            <h2 className="text-xl font-semibold text-blue-600 mb-4">Choose Your Starting Method</h2>
+            <p className="text-gray-600">根据您的情况选择最适合的方式开始制作单词卡片</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* 我已有单词文件 */}
+            <div 
+              className="border-2 border-dashed border-blue-300 rounded-2xl p-8 bg-white/50 hover:bg-white/80 hover:border-blue-400 transition-all duration-300 cursor-pointer group"
+              onClick={handleUploadClick}
+            >
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                  <FolderOpen className="w-8 h-8 text-blue-600" />
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    我已有单词文件
+                  </h3>
+                  <h3 className="text-lg font-semibold text-blue-600 mb-3">
+                    I Have Word Files
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-2">
+                    上传 CSV/Excel/Word/TXT 文件
+                  </p>
+                  <p className="text-gray-500 text-sm mb-3">
+                    Upload CSV/Excel/Word/TXT files
+                  </p>
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <p className="text-blue-700 text-xs font-medium">
+                      ✅ 适合：已准备好单词列表的用户
+                    </p>
+                    <p className="text-blue-600 text-xs">
+                      Perfect for: Users with prepared word lists
+                    </p>
+                  </div>
+                </div>
               </div>
-              
-              <div className="text-center">
-                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                  上传CSV文件
-                </h3>
-                <h3 className="text-xl font-medium text-blue-600 mb-3">
-                  Upload CSV File
-                </h3>
-                <p className="text-gray-600 mb-1">
-                  点击上传或拖拽文件到此处
-                </p>
-                <p className="text-gray-500 mb-1">
-                  Click to upload or drag & drop your file here
-                </p>
-                <p className="text-sm text-gray-500">
-                  支持格式: .csv，最大: 10MB | Supported: .csv, Max: 10MB
-                </p>
+            </div>
+
+            {/* 我没有文件，直接输入 */}
+            <div 
+              className="border-2 border-dashed border-green-300 rounded-2xl p-8 bg-white/50 hover:bg-white/80 hover:border-green-400 transition-all duration-300 cursor-pointer group"
+              onClick={onManualInput}
+            >
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                  <Edit3 className="w-8 h-8 text-green-600" />
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    我没有文件，直接输入
+                  </h3>
+                  <h3 className="text-lg font-semibold text-green-600 mb-3">
+                    Manual Input
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-2">
+                    手动输入单词，一行一个
+                  </p>
+                  <p className="text-gray-500 text-sm mb-3">
+                    Type words manually, one per line
+                  </p>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <p className="text-green-700 text-xs font-medium">
+                      ✅ 适合：临时制作少量单词卡片
+                    </p>
+                    <p className="text-green-600 text-xs">
+                      Perfect for: Quick creation of few cards
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
+
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.docx,.txt"
             onChange={onFileUpload}
             className="hidden"
           />
+          
+          {/* 格式说明 */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              支持格式: CSV, Excel (.xlsx), Word (.docx), TXT | 最大: 10MB
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Supported: CSV, Excel (.xlsx), Word (.docx), TXT | Max: 10MB
+            </p>
+          </div>
         </div>
 
         {/* Process Steps */}

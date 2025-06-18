@@ -58,18 +58,21 @@ export const Header: React.FC<HeaderProps> = ({
               Upload CSV
             </button>
             
-            <button 
-              onClick={onGenerateClick}
-              disabled={status !== 'uploaded'}
-              className={`flex items-center px-4 py-2 border rounded-md text-sm transition-colors ${
-                status === 'uploaded' 
-                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
-                  : 'border-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <Settings className="w-4 h-4 mr-1" />
-              {status === 'generating' ? '生成中...' : 'Generate'}
-            </button>
+            {/* Generate按钮已优化移除 - 用户确认后自动生成 */}
+            {false && (
+              <button 
+                onClick={onGenerateClick}
+                disabled={status !== 'uploaded'}
+                className={`flex items-center px-4 py-2 border rounded-md text-sm transition-colors ${
+                  status === 'uploaded' 
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                    : 'border-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Settings className="w-4 h-4 mr-1" />
+                {status === 'generating' ? '生成中...' : 'Generate'}
+              </button>
+            )}
             
             {/* PDF Export Button */}
             {wordsGenerated > 0 && onExportPDF && (
