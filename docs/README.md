@@ -15,6 +15,10 @@
 ### 📖 示例和格式
 - **[anki_format_example.md](./anki_format_example.md)** - Anki格式导入示例
 
+### 🧪 测试指南
+- **[DOCX_TEST_GUIDE.md](./DOCX_TEST_GUIDE.md)** - Word文档(.docx)测试指南
+- **[XLSX_TEST_GUIDE.md](./XLSX_TEST_GUIDE.md)** - Excel文件(.xlsx)测试指南
+
 ---
 
 **📌 注意**: 这些文档仅用于项目说明和开发参考，不参与业务逻辑或应用运行。 

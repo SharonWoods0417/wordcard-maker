@@ -17,6 +17,8 @@ import Papa from 'papaparse';
 import JSZip from 'jszip';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 import { WordCard } from './components/WordCard';
 import { PrintPage } from './components/PrintPage';
 import { Header } from './components/Header';
@@ -195,7 +197,7 @@ function App() {
     return completed;
   };
 
-  // Handle CSV upload
+  // Handle file upload (CSV/TXT)
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -203,7 +205,88 @@ function App() {
     // 重置应用状态，确保干净的开始
     resetAppState();
     
+    // 基础文件验证
+    const validationResult = validateFile(file);
+    if (!validationResult.isValid) {
+      setStatus('uploadError');
+      addToast('error', validationResult.errorMessage);
+      return;
+    }
+    
     setStatus('uploading');
+
+    // 根据文件类型选择不同的处理方式
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === 'csv') {
+      handleCSVUpload(file);
+    } else if (fileExtension === 'txt') {
+      handleTXTUpload(file);
+    } else if (fileExtension === 'docx') {
+      handleDOCXUpload(file);
+    } else if (fileExtension === 'xlsx') {
+      handleXLSXUpload(file);
+    } else {
+      setStatus('uploadError');
+      addToast('error', '❌ 不支持的文件格式。请上传CSV、TXT、DOCX或XLSX文件。');
+    }
+  };
+
+  // 文件验证函数
+  const validateFile = (file: File): { isValid: boolean; errorMessage: string } => {
+    // 检查文件是否存在
+    if (!file) {
+      return { isValid: false, errorMessage: '❌ 未选择任何文件，请重新选择。' };
+    }
+
+    // 检查文件大小（限制为10MB）
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return { isValid: false, errorMessage: '❌ 文件过大，请上传小于10MB的文件。' };
+    }
+
+    // 检查文件是否为空
+    if (file.size === 0) {
+      return { isValid: false, errorMessage: '❌ 文件为空，请选择包含内容的文件。' };
+    }
+
+    // 检查文件名
+    if (!file.name || file.name.trim() === '') {
+      return { isValid: false, errorMessage: '❌ 文件名无效，请重新选择文件。' };
+    }
+
+    // 检查文件扩展名
+    const fileName = file.name.toLowerCase();
+    const supportedExtensions = ['.csv', '.txt', '.docx', '.xlsx'];
+    const hasValidExtension = supportedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!hasValidExtension) {
+      return { 
+        isValid: false, 
+        errorMessage: '❌ 不支持的文件格式。支持的格式：CSV、TXT、DOCX、XLSX。' 
+      };
+    }
+
+    // 检查文件类型（MIME type）
+    const validMimeTypes = [
+      'text/csv',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/octet-stream' // 某些系统可能返回这个通用类型
+    ];
+
+    // 对于某些文件，浏览器可能不能正确识别MIME类型，所以这个检查相对宽松
+    if (file.type && !validMimeTypes.includes(file.type)) {
+      console.warn(`文件MIME类型警告: ${file.type}，但将继续处理`);
+    }
+
+    return { isValid: true, errorMessage: '' };
+  };
+
+  // Handle CSV upload
+  const handleCSVUpload = (file: File) => {
     addToast('info', '📄 正在解析CSV文件...');
 
     Papa.parse(file, {
@@ -211,54 +294,489 @@ function App() {
       skipEmptyLines: true,
       complete: (results) => {
         try {
+          // 检查解析错误
+          if (results.errors && results.errors.length > 0) {
+            const errorMessages = results.errors.map(err => err.message).join('; ');
+            setStatus('uploadError');
+            clearToastsByType('info');
+            setTimeout(() => {
+              addToast('error', `❌ CSV解析错误：${errorMessages}`);
+            }, 100);
+            return;
+          }
+
+          // 检查是否有数据
+          if (!results.data || results.data.length === 0) {
+            setStatus('uploadError');
+            clearToastsByType('info');
+            setTimeout(() => {
+              addToast('error', '❌ CSV文件为空或无法读取数据。');
+            }, 100);
+            return;
+          }
+
           const parsedWords = results.data as WordData[];
+          
+          // 检查是否有Word列
+          const firstRow = parsedWords[0];
+          if (!firstRow || !('Word' in firstRow)) {
+            setStatus('uploadError');
+            clearToastsByType('info');
+            setTimeout(() => {
+              addToast('error', '❌ CSV文件格式错误：未找到"Word"列。请确保第一行包含列标题"Word"。');
+            }, 100);
+            return;
+          }
+
+          // 过滤有效单词
           const validWords = parsedWords.filter(word => word.Word && word.Word.trim());
           
           if (validWords.length === 0) {
             setStatus('uploadError');
             clearToastsByType('info');
             setTimeout(() => {
-              addToast('error', '❌ 解析失败：CSV中没有找到有效单词。请确保包含"Word"列。');
+              addToast('error', '❌ CSV文件中没有找到有效单词。请检查"Word"列是否包含英文单词。');
             }, 100);
             return;
           }
 
-          // 显示确认弹窗
-          clearToastsByType('info');
-          showWordConfirmationModal(
-            validWords,
-            handleWordConfirmation,
-            handleWordCancellation
+          // 验证单词格式
+          const englishWords = validWords.filter(word => 
+            /^[a-zA-Z\s\-']+$/.test(word.Word.trim())
           );
-          
-          // 设置初始状态
-          setUploadedWordCount(validWords.length);
-          setWords([]);
-          setCurrentPage(0);
-          setStatus('uploaded');
-          
-          setTimeout(() => {
-            addToast('success', `✅ CSV解析成功！已识别 ${validWords.length} 个单词，请在弹窗中确认处理`);
-          }, 100);
+
+          if (englishWords.length === 0) {
+            setStatus('uploadError');
+            clearToastsByType('info');
+            setTimeout(() => {
+              addToast('error', '❌ CSV文件中没有找到有效的英文单词。');
+            }, 100);
+            return;
+          }
+
+          if (englishWords.length < validWords.length) {
+            addToast('info', `ℹ️ 已过滤掉 ${validWords.length - englishWords.length} 个无效单词，保留 ${englishWords.length} 个有效英文单词。`);
+          }
+
+          processUploadedWords(englishWords, 'CSV');
         } catch (error) {
+          console.error('CSV parsing error:', error);
           setStatus('uploadError');
           clearToastsByType('info');
           setTimeout(() => {
-            addToast('error', '❌ 解析失败：CSV格式无效。');
+            addToast('error', '❌ CSV文件处理失败：文件可能损坏或格式不正确。');
           }, 100);
         }
       },
       error: (error) => {
+        console.error('Papa Parse error:', error);
         setStatus('uploadError');
         clearToastsByType('info');
         setTimeout(() => {
-          addToast('error', '❌ 解析失败：' + error.message);
+          addToast('error', `❌ CSV文件读取失败：${error.message || '文件可能损坏'}`);
         }, 100);
       }
     });
+  };
 
-    // Don't reset file input here - we need it for generation
-    // Reset only on successful generation or when uploading new file
+  // Handle TXT upload
+  const handleTXTUpload = (file: File) => {
+    addToast('info', '📝 正在解析TXT文件...');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        
+        // 检查文件内容
+        if (!text) {
+          setStatus('uploadError');
+          clearToastsByType('info');
+          setTimeout(() => {
+            addToast('error', '❌ TXT文件读取失败：无法获取文件内容。');
+          }, 100);
+          return;
+        }
+
+        if (text.trim() === '') {
+          setStatus('uploadError');
+          clearToastsByType('info');
+          setTimeout(() => {
+            addToast('error', '❌ TXT文件为空：请选择包含单词的文件。');
+          }, 100);
+          return;
+        }
+
+        // 检查文件大小（内容长度）
+        if (text.length > 50000) { // 约50KB文本内容
+          addToast('info', '⚠️ 文件内容较大，正在处理...');
+        }
+
+        // 智能解析：支持多种分隔符
+        const words = parseTXTContent(text);
+
+        if (words.length === 0) {
+          setStatus('uploadError');
+          clearToastsByType('info');
+          setTimeout(() => {
+            addToast('error', '❌ TXT文件中没有找到有效的英文单词。支持的分隔符：换行符、空格、逗号、分号。');
+          }, 100);
+          return;
+        }
+
+        // 检查单词数量限制
+        if (words.length > 1000) {
+          addToast('info', `⚠️ 文件包含 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+        }
+
+        // 转换为WordData格式
+        const wordDataList: WordData[] = words.map(word => ({
+          Word: word
+          // 其他字段将在后续自动补全
+        }));
+
+        processUploadedWords(wordDataList, 'TXT');
+      } catch (error) {
+        console.error('TXT parsing error:', error);
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ TXT文件处理失败：文件可能包含不支持的字符或格式错误。');
+        }, 100);
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      setStatus('uploadError');
+      clearToastsByType('info');
+      setTimeout(() => {
+        addToast('error', '❌ TXT文件读取失败：无法访问文件内容，请检查文件是否损坏。');
+      }, 100);
+    };
+
+    // 尝试以UTF-8编码读取，如果失败，某些情况下会自动回退
+    try {
+      reader.readAsText(file, 'UTF-8');
+    } catch (error) {
+      console.error('FileReader readAsText error:', error);
+      setStatus('uploadError');
+      clearToastsByType('info');
+      setTimeout(() => {
+        addToast('error', '❌ TXT文件读取失败：无法启动文件读取器。');
+      }, 100);
+    }
+  };
+
+  // 智能解析TXT文件内容，支持多种分隔符
+  const parseTXTContent = (text: string): string[] => {
+    // 支持的分隔符：换行符(\n、\r)、空格、英文逗号(,)、中文逗号(，)、英文分号(;)、中文分号(；)
+    // 使用正则表达式将所有分隔符统一替换为英文逗号
+    const normalizedText = text.replace(/[\n\r\s,，;；]+/g, ',');
+    
+    // 以逗号分割
+    const rawWords = normalizedText.split(',');
+    
+    // 清洗数据：去除空白字符、过滤空值、去重
+    const cleanWords = rawWords
+      .map(word => word.trim()) // 去除首尾空格
+      .filter(word => word.length > 0) // 过滤空值
+      .filter(word => /^[a-zA-Z\s-']+$/.test(word)) // 只保留英文单词（包含空格、连字符、撇号）
+      .map(word => word.toLowerCase()) // 转为小写统一处理
+      .filter((word, index, array) => array.indexOf(word) === index); // 去重
+    
+    console.log(`📝 TXT解析结果: 原始内容 -> ${rawWords.length} 项 -> 清洗后 ${cleanWords.length} 个有效单词`);
+    console.log('🔍 解析出的单词:', cleanWords.slice(0, 10), cleanWords.length > 10 ? '...' : '');
+    
+    return cleanWords;
+  };
+
+  // Handle DOCX upload
+  const handleDOCXUpload = async (file: File) => {
+    addToast('info', '📄 正在解析Word文档...');
+
+    try {
+      // 检查文件是否为有效的docx文件
+      if (!file.name.toLowerCase().endsWith('.docx')) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ 文件格式错误：请确保上传的是.docx格式的Word文档。');
+        }, 100);
+        return;
+      }
+
+      // 先获取ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // 检查文件是否被正确读取
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Word文档读取失败：文件可能损坏或无法访问。');
+        }, 100);
+        return;
+      }
+
+      // 使用mammoth库解析DOCX文件
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value;
+      
+      // 检查是否成功提取到文本
+      if (!text) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Word文档解析失败：无法提取文本内容，文件可能损坏。');
+        }, 100);
+        return;
+      }
+
+      if (text.trim() === '') {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Word文档为空：请确保文档包含文本内容。');
+        }, 100);
+        return;
+      }
+
+      // 检查提取的文本长度
+      if (text.length > 100000) { // 约100KB文本内容
+        addToast('info', '⚠️ Word文档内容较大，正在处理...');
+      }
+
+      // 复用TXT解析逻辑，支持多种分隔符
+      const words = parseTXTContent(text);
+
+      if (words.length === 0) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Word文档中没有找到有效的英文单词。请确保文档包含英文单词。');
+        }, 100);
+        return;
+      }
+
+      // 检查单词数量
+      if (words.length > 1000) {
+        addToast('info', `⚠️ 从Word文档中提取到 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+      }
+
+      // 转换为WordData格式
+      const wordDataList: WordData[] = words.map(word => ({
+        Word: word
+        // 其他字段将在后续自动补全
+      }));
+
+      processUploadedWords(wordDataList, 'DOCX');
+    } catch (error) {
+      console.error('DOCX parsing error:', error);
+      setStatus('uploadError');
+      clearToastsByType('info');
+      setTimeout(() => {
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        addToast('error', `❌ Word文档处理失败：${errorMessage.includes('Invalid') ? '文件格式无效' : '文件可能损坏或不受支持'}`);
+      }, 100);
+    }
+  };
+
+  // Handle XLSX upload
+  const handleXLSXUpload = async (file: File) => {
+    addToast('info', '📊 正在解析Excel文件...');
+
+    try {
+      // 检查文件是否为有效的Excel文件
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ 文件格式错误：请确保上传的是.xlsx或.xls格式的Excel文件。');
+        }, 100);
+        return;
+      }
+
+      // 读取文件为ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // 检查文件是否被正确读取
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Excel文件读取失败：文件可能损坏或无法访问。');
+        }, 100);
+        return;
+      }
+
+      // 使用xlsx库解析Excel文件
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      // 检查工作簿是否有效
+      if (!workbook || !workbook.SheetNames) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Excel文件解析失败：文件格式无效或损坏。');
+        }, 100);
+        return;
+      }
+
+      // 获取第一个工作表
+      const firstSheetName = workbook.SheetNames[0];
+      if (!firstSheetName) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Excel文件中没有找到工作表：请确保文件包含至少一个工作表。');
+        }, 100);
+        return;
+      }
+      
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // 检查工作表是否有效
+      if (!worksheet) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', `❌ 无法读取工作表"${firstSheetName}"：工作表可能损坏。`);
+        }, 100);
+        return;
+      }
+
+      // 将工作表转换为JSON格式
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (!jsonData || jsonData.length === 0) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', `❌ 工作表"${firstSheetName}"为空：请确保表格包含数据。`);
+        }, 100);
+        return;
+      }
+      
+      // 检查数据结构
+      if (jsonData.length === 1) {
+        addToast('info', '⚠️ Excel只有标题行，正在检查是否包含有效数据...');
+      }
+
+      // 智能提取单词
+      const words = extractWordsFromExcelData(jsonData as any[][]);
+      
+      if (words.length === 0) {
+        setStatus('uploadError');
+        clearToastsByType('info');
+        setTimeout(() => {
+          addToast('error', '❌ Excel文件中没有找到有效的英文单词。请确保表格包含英文单词，推荐使用"Word"列标题。');
+        }, 100);
+        return;
+      }
+
+      // 检查单词数量
+      if (words.length > 1000) {
+        addToast('info', `⚠️ 从Excel中提取到 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+      }
+
+      // 转换为WordData格式
+      const wordDataList: WordData[] = words.map(word => ({
+        Word: word
+        // 其他字段将在后续自动补全
+      }));
+
+      processUploadedWords(wordDataList, 'XLSX');
+    } catch (error) {
+      console.error('XLSX parsing error:', error);
+      setStatus('uploadError');
+      clearToastsByType('info');
+      setTimeout(() => {
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        if (errorMessage.includes('Unsupported file type')) {
+          addToast('error', '❌ Excel文件格式不受支持：请使用标准的.xlsx或.xls格式。');
+        } else if (errorMessage.includes('password')) {
+          addToast('error', '❌ Excel文件被密码保护：请使用无密码保护的文件。');
+        } else {
+          addToast('error', '❌ Excel文件处理失败：文件可能损坏、格式无效或不受支持。');
+        }
+      }, 100);
+    }
+  };
+
+  // 从Excel数据中智能提取单词
+  const extractWordsFromExcelData = (data: any[][]): string[] => {
+    if (!data || data.length === 0) return [];
+    
+    let allText = '';
+    
+    // 策略1: 检查是否有"Word"列（类似CSV格式）
+    const headerRow = data[0];
+    const wordColumnIndex = headerRow.findIndex((cell: any) => 
+      typeof cell === 'string' && cell.toLowerCase() === 'word'
+    );
+    
+    if (wordColumnIndex !== -1) {
+      // 找到了Word列，提取该列的数据
+      console.log('📊 发现Word列，使用结构化提取方式');
+      for (let i = 1; i < data.length; i++) {
+        const cell = data[i][wordColumnIndex];
+        if (cell && typeof cell === 'string') {
+          allText += cell + ' ';
+        }
+      }
+    } else {
+      // 策略2: 提取第一列的所有数据
+      console.log('📊 未发现Word列，使用第一列提取方式');
+      for (let i = 0; i < data.length; i++) {
+        const cell = data[i][0];
+        if (cell && typeof cell === 'string') {
+          allText += cell + ' ';
+        }
+      }
+      
+      // 策略3: 如果第一列数据不够，提取所有文本内容
+      if (allText.trim().length < 10) {
+        console.log('📊 第一列数据不足，使用全表提取方式');
+        allText = '';
+        for (const row of data) {
+          for (const cell of row) {
+            if (cell && typeof cell === 'string') {
+              allText += cell + ' ';
+            }
+          }
+        }
+      }
+    }
+    
+    // 使用已有的智能解析函数处理文本
+    const words = parseTXTContent(allText);
+    
+    console.log(`📊 Excel解析结果: 提取文本长度 ${allText.length} -> ${words.length} 个有效单词`);
+    
+    return words;
+  };
+
+  // 统一处理上传的单词数据
+  const processUploadedWords = (wordDataList: WordData[], fileType: string) => {
+    // 显示确认弹窗
+    clearToastsByType('info');
+    showWordConfirmationModal(
+      wordDataList,
+      handleWordConfirmation,
+      handleWordCancellation
+    );
+    
+    // 设置初始状态
+    setUploadedWordCount(wordDataList.length);
+    setWords([]);
+    setCurrentPage(0);
+    setStatus('uploaded');
+    
+    setTimeout(() => {
+      addToast('success', `✅ ${fileType}解析成功！已识别 ${wordDataList.length} 个单词，请在弹窗中确认处理`);
+    }, 100);
   };
 
   // 内部卡片生成函数 - 接受单词数据参数
