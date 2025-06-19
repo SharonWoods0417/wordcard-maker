@@ -6,6 +6,7 @@
 
 ### 🚀 开发规划
 - **[OPTIMIZATION_ROADMAP.md](./OPTIMIZATION_ROADMAP.md)** - 项目优化路线图和功能清单
+- **[PREVIEW_PAGE_OPTIMIZATION.md](./PREVIEW_PAGE_OPTIMIZATION.md)** - 预览页面优化详细方案 🎯 **最新**
 - **[NEW_HOMEPAGE_README.md](./NEW_HOMEPAGE_README.md)** - 新版首页设计说明
 
 ### 🔧 技术文档  

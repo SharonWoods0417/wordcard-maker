@@ -1039,10 +1039,126 @@ function App() {
         status={status}
         uploadedWordCount={uploadedWordCount}
         wordsGenerated={words.length}
+        parsedWordsCount={parsedWords.length}
+        onBackToEdit={() => {
+          // TODO: 实现返回编辑功能
+          console.log('返回编辑功能');
+        }}
+        onDownloadCSV={() => {
+          // TODO: 实现CSV下载功能
+          console.log('下载CSV功能');
+        }}
+        onDownloadAudio={() => {
+          // TODO: 实现音频包下载功能
+          console.log('下载音频包功能');
+        }}
+        onDownloadImages={() => {
+          // TODO: 实现图片包下载功能
+          console.log('下载图片包功能');
+        }}
+        onBackToHome={() => {
+          resetAppState();
+          setStatus('idle');
+        }}
       />
 
+      {/* 全宽信息栏 - 仅在预览页面显示 */}
+      {(status === 'generated' || status === 'generating') && (
+        <div className="bg-gray-50 border-b border-gray-200 shadow-sm pt-20">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            {status === 'generating' ? (
+              <div className="flex items-center justify-center">
+                <div className="flex items-center text-blue-600">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  正在生成单词卡片，请稍候...
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                {/* 左侧：返回主页 | 显示信息 | 打印说明 */}
+                <div className="flex items-center space-x-4">
+                  {/* 返回主页按钮 */}
+                  <button
+                    onClick={() => {
+                      resetAppState();
+                      setStatus('idle');
+                    }}
+                    className="flex items-center px-3 py-2 bg-white text-gray-700 rounded border hover:bg-gray-50 transition-all duration-200"
+                    title="返回主页重新开始"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    返回主页
+                  </button>
+                  
+                  {/* 分隔线 */}
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  
+                  {/* 卡片统计信息 */}
+                  <div className="flex items-center text-gray-600">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <span className="font-medium">
+                      显示 {currentPage * CARDS_PER_PAGE + 1}-{Math.min((currentPage + 1) * CARDS_PER_PAGE, words.length)} / {words.length} 张
+                    </span>
+                    <span className="text-sm text-gray-500 ml-2">
+                      包含正反面，适合打印
+                    </span>
+                  </div>
+                </div>
+
+                {/* 右侧：分页按钮 + 返回编辑（操作区） */}
+                <div className="flex items-center space-x-3">
+                  {/* 分页导航 */}
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 0}
+                      className="flex items-center px-3 py-2 bg-white text-gray-700 rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      title="上一页"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      上一页
+                    </button>
+                    
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded border text-sm font-medium">
+                      第 {currentPage + 1} 页 / {totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={handleNextPage}
+                      disabled={currentPage >= totalPages - 1}
+                      className="flex items-center px-3 py-2 bg-white text-gray-700 rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      title="下一页"
+                    >
+                      下一页
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </button>
+                  </div>
+                  
+                  {/* 返回编辑按钮 */}
+                  <button
+                    onClick={() => {
+                      showWordConfirmationModal(
+                        parsedWords, 
+                        handleWordConfirmation, 
+                        handleWordCancellation
+                      );
+                    }}
+                    disabled={parsedWords.length === 0}
+                    className="flex items-center px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    title="重新编辑单词列表"
+                  >
+                    <Settings className="w-4 h-4 mr-1" />
+                    编辑单词表
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="pt-24 pb-8">
+      <div className={status === 'idle' || status === 'uploading' || status === 'uploaded' || status === 'uploadError' ? "pt-24 pb-8" : "pt-4 pb-8"}>
         {status === 'idle' || status === 'uploading' || status === 'uploaded' || status === 'uploadError' ? (
           // Show new homepage
           <div className="max-w-7xl mx-auto">
@@ -1061,40 +1177,6 @@ function App() {
         ) : (
           // Show existing card generation interface (保持原有逻辑)
           <div className="max-w-7xl mx-auto px-4 space-y-6">
-            {/* Status indicator for debugging */}
-            <div className="text-center mb-4">
-              <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                状态: {status} | 已解析: {parsedWords.length} | 已生成: {words.length}
-              </span>
-            </div>
-            
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-4">
-                <button
-                  onClick={() => {
-                    resetAppState();
-                    setStatus('idle');
-                  }}
-                  className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors mr-4"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  返回主页
-                </button>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  单词卡片预览
-                </h2>
-              </div>
-              {status === 'generating' ? (
-                <p className="text-blue-600 mb-6 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  正在生成单词卡片，请稍候...
-                </p>
-              ) : (
-                <p className="text-gray-600 mb-6">
-                  已生成 {words.length} 张卡片，当前显示第 {currentPage + 1} 页，共 {totalPages} 页
-                </p>
-              )}
-            </div>
             
             {/* ========================================
              * 已验证布局 - 固定尺寸卡片显示区域
@@ -1109,41 +1191,6 @@ function App() {
              * ======================================== */}
             {words.length > 0 && (
               <div className="max-w-7xl mx-auto px-4">
-                {/* Page Navigation */}
-                <div className="flex items-center justify-center space-x-4 mb-6 no-print">
-                  <button
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 0}
-                    className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    上一页
-                  </button>
-                  
-                  <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md font-medium">
-                    第 {currentPage + 1} 页，共 {totalPages} 页
-                  </span>
-                  
-                  <button
-                    onClick={handleNextPage}
-                    disabled={currentPage >= totalPages - 1}
-                    className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    下一页
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </button>
-                </div>
-
-                {/* Page Info */}
-                <div className="text-center mb-6 no-print">
-                  <p className="text-gray-600">
-                    显示卡片 {currentPage * CARDS_PER_PAGE + 1} 到 {Math.min((currentPage + 1) * CARDS_PER_PAGE, words.length)}，共 {words.length} 张
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    每页包含正面和背面，适合打印制作实体卡片
-                  </p>
-                </div>
-
                 {/* Print Pages Container - 使用PrintPage组件确保PDF导出正常 */}
                 <div className="space-y-8">
                   {/* Front Side Page */}
