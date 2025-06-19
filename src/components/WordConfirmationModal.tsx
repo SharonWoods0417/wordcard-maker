@@ -5,7 +5,8 @@ import {
   Trash2, 
   FileText,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Download
 } from 'lucide-react';
 
 interface WordConfirmationModalProps {
@@ -116,6 +117,44 @@ const WordConfirmationModal: React.FC<WordConfirmationModalProps> = ({
 
   const handleConfirm = () => {
     onConfirm(selectedWords);
+  };
+
+  const handleExportCSV = () => {
+    // 构建CSV内容，包含补全的字段
+    const csvHeaders = ['Word', 'Definition', 'IPA', 'Example', 'Example_CN', 'Definition_CN', 'Audio', 'Picture'];
+    
+    // 为每个单词生成补全数据（与App.tsx中的autoCompleteWord函数逻辑一致）
+    const csvRows = selectedWords.map(word => {
+      return [
+        word,
+        `Definition for ${word}`,
+        `/ˈwɜːrd/`,
+        `This is an example sentence with ${word}.`,
+        `这是一个包含 ${word} 的例句。`,
+        `n. ${word}的中文释义`,
+        `/media/${word.toLowerCase()}.mp3`,
+        `/media/${word.toLowerCase()}.jpg`
+      ];
+    });
+
+    // 构建完整的CSV内容
+    const csvContent = [
+      csvHeaders,
+      ...csvRows
+    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    // 创建下载链接
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `word_cards_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Check if add button should be disabled
@@ -333,6 +372,14 @@ const WordConfirmationModal: React.FC<WordConfirmationModalProps> = ({
               className="px-4 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
             >
               取消
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={selectedWords.length === 0}
+              className="px-4 py-1.5 border border-green-300 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1 text-sm"
+            >
+              <Download className="w-3 h-3" />
+              <span>导出CSV</span>
             </button>
             <button
               onClick={handleConfirm}

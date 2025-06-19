@@ -6,23 +6,29 @@ import {
   Sparkles,
   Info,
   CheckCircle,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 
 interface ManualInputModalProps {
   isOpen: boolean;
   onConfirm: (words: string[]) => void;
   onCancel: () => void;
+  onExportCSV?: (words: string[]) => void;
 }
 
 const ManualInputModal: React.FC<ManualInputModalProps> = ({
   isOpen,
   onConfirm,
-  onCancel
+  onCancel,
+  onExportCSV
 }) => {
   const [inputText, setInputText] = useState('');
   const [wordList, setWordList] = useState<string[]>([]);
+  const [lastWordCount, setLastWordCount] = useState(0);
+  const [newlyAddedWords, setNewlyAddedWords] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const wordListContainerRef = useRef<HTMLDivElement>(null);
 
   // 自动聚焦到输入框
   useEffect(() => {
@@ -47,6 +53,21 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
     };
   }, [isOpen]);
 
+  // 自动滚动到最新添加的单词
+  useEffect(() => {
+    if (wordListContainerRef.current && wordList.length > 0) {
+      // 每当单词列表有变化时，都滚动到底部
+      setTimeout(() => {
+        if (wordListContainerRef.current) {
+          wordListContainerRef.current.scrollTo({
+            top: wordListContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 150); // 稍微延长延迟，确保DOM和动画渲染完成
+    }
+  }, [wordList.length, wordList]); // 监听both length和wordList本身的变化
+
   // 实时解析输入的单词
   useEffect(() => {
     const words = inputText
@@ -55,8 +76,32 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
       .filter(word => word.length > 0)
       .slice(0, 40); // 限制最多40个单词
     
+    const currentWordCount = words.length;
+    
+    // 检测新增的单词
+    if (currentWordCount > lastWordCount) {
+      const newWords = words.slice(lastWordCount);
+      setNewlyAddedWords(new Set(newWords));
+      
+      // 立即触发滚动到新增单词
+      setTimeout(() => {
+        if (wordListContainerRef.current) {
+          wordListContainerRef.current.scrollTo({
+            top: wordListContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+      
+      // 1秒后清除新单词高亮
+      setTimeout(() => {
+        setNewlyAddedWords(new Set());
+      }, 1000);
+    }
+    
     setWordList(words);
-  }, [inputText]);
+    setLastWordCount(currentWordCount);
+  }, [inputText, lastWordCount]);
 
   const handleConfirm = () => {
     if (wordList.length === 0) {
@@ -70,6 +115,19 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       handleConfirm();
+    }
+    
+    // 普通回车键 - 触发滚动到新增单词
+    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+      // 延迟触发滚动，确保新单词已被解析和渲染
+      setTimeout(() => {
+        if (wordListContainerRef.current) {
+          wordListContainerRef.current.scrollTo({
+            top: wordListContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 200); // 给更多时间让DOM更新和动画完成
     }
   };
 
@@ -88,6 +146,12 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
     const updatedWords = wordList.filter((_, index) => index !== indexToRemove);
     const newInputText = updatedWords.join('\n');
     setInputText(newInputText);
+  };
+
+  const handleExportCSV = () => {
+    if (onExportCSV) {
+      onExportCSV(wordList);
+    }
   };
 
   if (!isOpen) {
@@ -191,29 +255,48 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 space-y-2 overflow-y-auto min-h-0 mb-4">
-                  {wordList.map((word, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 rounded-lg border bg-white border-gray-200 hover:bg-gray-100 transition-all duration-200"
-                    >
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <span className="w-4 h-4 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-medium flex-shrink-0">
-                          {index + 1}
-                        </span>
-                        <span className="font-medium text-gray-800 break-all leading-tight">
-                          {word}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveWord(index)}
-                        className="w-5 h-5 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ml-1.5"
-                        title="删除单词"
+                <div 
+                  ref={wordListContainerRef}
+                  className="flex-1 space-y-2 overflow-y-auto min-h-0 mb-4"
+                >
+                  {wordList.map((word, index) => {
+                    const isNewlyAdded = newlyAddedWords.has(word);
+                    return (
+                      <div
+                        key={`${word}-${index}`}
+                        className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-200 ${
+                          isNewlyAdded 
+                            ? 'bg-green-100 border-green-300 ring-2 ring-green-200 animate-pulse' 
+                            : 'bg-white border-gray-200 hover:bg-gray-100'
+                        }`}
                       >
-                        <Trash2 className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                            isNewlyAdded 
+                              ? 'bg-green-200 text-green-700' 
+                              : 'bg-green-100 text-green-600'
+                          }`}>
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-gray-800 break-all leading-tight">
+                            {word}
+                          </span>
+                          {isNewlyAdded && (
+                            <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded-full animate-bounce">
+                              新
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveWord(index)}
+                          className="w-5 h-5 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ml-1.5"
+                          title="删除单词"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -245,6 +328,14 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               取消
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={wordList.length === 0}
+              className="px-4 py-2 border border-green-300 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+            >
+              <Download className="w-4 h-4" />
+              <span>导出CSV</span>
             </button>
             <button
               onClick={handleConfirm}

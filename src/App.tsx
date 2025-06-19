@@ -841,7 +841,7 @@ function App() {
   };
 
   // 手动输入确认处理
-  const handleManualInputConfirm = (words: string[]) => {
+  const handleManualInputConfirm = async (words: string[]) => {
     setIsManualInputOpen(false);
     
     // 转换为WordData格式
@@ -850,18 +850,55 @@ function App() {
       // 其他字段将在后续自动补全
     }));
 
-    // 设置状态并显示确认弹窗
+    // 直接生成卡片，不再显示确认弹窗
     setUploadedWordCount(wordDataList.length);
-    setStatus('uploaded');
+    addToast('success', `✅ 已确认 ${wordDataList.length} 个单词，正在生成卡片...`);
     
-    addToast('success', `✅ 已输入 ${wordDataList.length} 个单词，请在弹窗中确认处理`);
+    // 直接开始生成卡片
+    setTimeout(async () => {
+      await handleGenerateCardsInternal(wordDataList);
+    }, 500); // 给用户一点时间看到确认消息
+  };
+
+  // 手动输入的导出CSV功能
+  const handleManualInputExportCSV = (words: string[]) => {
+    // 构建CSV内容，包含补全的字段
+    const csvHeaders = ['Word', 'Definition', 'IPA', 'Example', 'Example_CN', 'Definition_CN', 'Audio', 'Picture'];
     
-    // 显示确认弹窗
-    showWordConfirmationModal(
-      wordDataList,
-      handleWordConfirmation,
-      handleWordCancellation
-    );
+    // 为每个单词生成补全数据（与autoCompleteWord函数逻辑一致）
+    const csvRows = words.map(word => {
+      return [
+        word,
+        `Definition for ${word}`,
+        `/ˈwɜːrd/`,
+        `This is an example sentence with ${word}.`,
+        `这是一个包含 ${word} 的例句。`,
+        `n. ${word}的中文释义`,
+        `/media/${word.toLowerCase()}.mp3`,
+        `/media/${word.toLowerCase()}.jpg`
+      ];
+    });
+
+    // 构建完整的CSV内容
+    const csvContent = [
+      csvHeaders,
+      ...csvRows
+    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    // 创建下载链接
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `manual_words_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    addToast('success', `✅ CSV文件导出成功！包含 ${words.length} 个单词`);
   };
 
   // 手动输入取消处理
@@ -1158,6 +1195,7 @@ function App() {
         isOpen={isManualInputOpen}
         onConfirm={handleManualInputConfirm}
         onCancel={handleManualInputCancel}
+        onExportCSV={handleManualInputExportCSV}
       />
     </div>
   );
