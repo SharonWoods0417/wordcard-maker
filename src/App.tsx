@@ -23,8 +23,7 @@ import { WordCard } from './components/WordCard';
 import { PrintPage } from './components/PrintPage';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
-import { FeaturesSection } from './components/FeaturesSection';
-import { CSVGuideSection } from './components/CSVGuideSection';
+import { CardShowcaseSection } from './components/CardShowcaseSection';
 import ManualInputModal from './components/ManualInputModal';
 import { showWordConfirmationModal } from './utils/boltModalIntegration';
 
@@ -912,19 +911,41 @@ function App() {
     // 这里可以实现打开示例CSV的逻辑
   };
 
-  const handleDownloadTemplate = () => {
-    const csvContent = 'Word\napple\nbook\ncomputer\nhello\nworld';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = 'word_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    addToast('success', '📥 模板下载成功！');
+  const handleDownloadTemplate = async () => {
+    try {
+      // 从public目录或项目根目录加载现有的模板文件
+      const response = await fetch('/wordlist_template.csv');
+      if (response.ok) {
+        const csvContent = await response.text();
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'wordlist_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        addToast('success', '📥 CSV模板下载成功！文件包含完整的字段格式示例');
+      } else {
+        // 备用方案：如果无法加载文件，使用硬编码的模板
+        const csvContent = 'Word,Definition,IPA,Example,Example_CN,Definition_CN,Audio,Picture\napple,a round fruit,/ˈæpəl/,"I eat an apple every day","我每天吃一个苹果","n. 苹果",apple.mp3,apple.jpg\nbook,printed pages bound together,/bʊk/,"I read a book before bed","我睡前读一本书","n. 书",book.mp3,book.jpg';
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'wordlist_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        addToast('success', '📥 CSV模板下载成功！');
+      }
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      addToast('error', '❌ 模板下载失败，请重试');
+    }
   };
 
   // PDF导出功能
@@ -1167,12 +1188,9 @@ function App() {
               fileInputRef={fileInputRef}
               onManualInput={handleManualInput}
               status={status}
-            />
-            <FeaturesSection />
-            <CSVGuideSection 
-              onViewExample={handleViewExample}
               onDownloadTemplate={handleDownloadTemplate}
             />
+            <CardShowcaseSection />
           </div>
         ) : (
           // Show existing card generation interface (保持原有逻辑)

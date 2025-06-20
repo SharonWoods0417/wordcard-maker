@@ -1,18 +1,20 @@
 import React from 'react';
-import { Upload, Edit3, FileText, FolderOpen } from 'lucide-react';
+import { Upload, Edit3, FileText, FolderOpen, Download } from 'lucide-react';
 
 interface HeroSectionProps {
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onManualInput: () => void;
   status: string;
+  onDownloadTemplate: () => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   onFileUpload, 
   fileInputRef, 
   onManualInput,
-  status 
+  status,
+  onDownloadTemplate
 }) => {
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -20,22 +22,49 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-20">
-      <div className="max-w-4xl mx-auto text-center px-4">
-        {/* Main Title */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4 leading-tight">
-            制作专业单词卡片
-            <br />
-            <span className="text-3xl text-blue-600 font-medium">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* 首页中间标题区域 - 完整结构 */}
+        <div className="text-center mb-16">
+          {/* 主标题区域 */}
+          <div className="mb-8">
+            {/* 中文主标题 - 渐变大字 */}
+            <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                制作专业单词卡片
+              </span>
+            </h1>
+            
+            {/* 英文副标题 */}
+            <h2 className="text-3xl md:text-4xl font-bold text-blue-600 mb-8 tracking-wide">
               Create Professional Word Cards
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-2">
-            让英语学习变得简单有趣
-          </p>
-          <p className="text-lg text-gray-500">
-            Make English Learning Simple and Fun
-          </p>
+            </h2>
+            
+            {/* 副标语区域 */}
+            <div className="max-w-2xl mx-auto space-y-3">
+              {/* 中文副标语 */}
+              <p className="text-xl font-semibold text-gray-800">
+                让英语学习变得简单有趣
+              </p>
+              {/* 英文副标语 */}
+              <p className="text-lg text-gray-600 font-medium">
+                Make English Learning Simple and Fun
+              </p>
+            </div>
+          </div>
+
+          {/* 特性标签 */}
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            {[
+              { text: "智能补全", color: "bg-blue-100 text-blue-700 border-blue-200" },
+              { text: "专业排版", color: "bg-purple-100 text-purple-700 border-purple-200" },
+              { text: "一键导出", color: "bg-green-100 text-green-700 border-green-200" },
+              { text: "支持Anki", color: "bg-orange-100 text-orange-700 border-orange-200" }
+            ].map((badge, index) => (
+              <span key={index} className={`px-4 py-2 rounded-full text-sm font-semibold border ${badge.color} shadow-sm`}>
+                {badge.text}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* 双入口选择区域 */}
@@ -44,6 +73,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <h2 className="text-2xl font-bold text-gray-800 mb-2">选择您的起始方式</h2>
             <h2 className="text-xl font-semibold text-blue-600 mb-4">Choose Your Starting Method</h2>
             <p className="text-gray-600">根据您的情况选择最适合的方式开始制作单词卡片</p>
+          </div>
+
+          {/* 下载CSV模板按钮 - 移动到起始方式选择框上面 */}
+          <div className="mb-8 text-center">
+            <button
+              onClick={onDownloadTemplate}
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 group"
+            >
+              <Download className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+              <span>下载 CSV 模板</span>
+              <span className="text-blue-100 text-sm ml-2">Download Template</span>
+            </button>
+            <p className="text-sm text-blue-600 mt-2 font-medium">
+              💡 不知道如何填写单词表？先下载模板查看示例格式
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -126,16 +170,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             onChange={onFileUpload}
             className="hidden"
           />
-          
-          {/* 格式说明 */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              支持格式: CSV, Excel (.xlsx), Word (.docx), TXT | 最大: 10MB
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Supported: CSV, Excel (.xlsx), Word (.docx), TXT | Max: 10MB
-            </p>
-          </div>
         </div>
 
         {/* Process Steps */}
