@@ -1,93 +1,102 @@
 export interface WordData {
   Word: string;
-  Definition: string;
   IPA: string;
+  PhonicsChunks: string[];
+  PhonicsIPA: string[];
+  Definition_CN: string;
   Example: string;
   Example_CN: string;
-  Definition_CN: string;
   Audio: string;
   Picture: string;
 }
 
 export const sampleWords: WordData[] = [
   {
-    Word: "Freedom",
-    Definition: "The power or right to act, speak, or think as one wants without hindrance or restraint",
-    IPA: "/ˈfriːdəm/",
-    Example: "The constitution guarantees freedom of speech to all citizens.",
-    Example_CN: "宪法保障所有公民的言论自由。",
-    Definition_CN: "n. 自由；自主权",
-    Audio: "freedom.mp3",
-    Picture: "https://images.pexels.com/photos/189349/pexels-photo-189349.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "adventure",
+    IPA: "/ədˈventʃər/",
+    PhonicsChunks: ["ad", "ven", "t", "ure"],
+    PhonicsIPA: ["/əd/", "/ven/", "/t/", "/ʃər/"],
+    Definition_CN: "n. 冒险；奇遇",
+    Example: "We went on an exciting adventure in the mountains.",
+    Example_CN: "我们在山里进行了一次激动人心的冒险。",
+    Audio: "adventure.mp3",
+    Picture: "adventure.jpg"
   },
   {
-    Word: "Innovation",
-    Definition: "The action or process of innovating; a new method, idea, product, etc.",
-    IPA: "/ˌɪnəˈveɪʃn/",
-    Example: "The company is known for its innovation in sustainable technology.",
-    Example_CN: "这家公司以在可持续技术方面的创新而闻名。",
-    Definition_CN: "n. 创新；革新",
-    Audio: "innovation.mp3",
-    Picture: "https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "knowledge",
+    IPA: "/ˈnɒlɪdʒ/",
+    PhonicsChunks: ["know", "l", "edge"],
+    PhonicsIPA: ["/nəʊ/", "/l/", "/ɪdʒ/"],
+    Definition_CN: "n. 知识；学问",
+    Example: "Knowledge is power in today's information age.",
+    Example_CN: "在当今信息时代，知识就是力量。",
+    Audio: "knowledge.mp3",
+    Picture: "knowledge.jpg"
   },
   {
-    Word: "Courage",
-    Definition: "The ability to do something that frightens one; strength in the face of pain or grief",
-    IPA: "/ˈkʌrɪdʒ/",
-    Example: "It takes courage to stand up for what you believe in.",
-    Example_CN: "为自己的信念挺身而出需要勇气。",
-    Definition_CN: "n. 勇气；胆量",
-    Audio: "courage.mp3",
-    Picture: "https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "strawberry",
+    IPA: "/ˈstrɔːbəri/",
+    PhonicsChunks: ["str", "aw", "b", "e", "rr", "y"],
+    PhonicsIPA: ["/str/", "/ɔː/", "/b/", "/ə/", "/r/", "/i/"],
+    Definition_CN: "n. 草莓；草莓色",
+    Example: "I love eating fresh strawberries in summer.",
+    Example_CN: "我喜欢在夏天吃新鲜的草莓。",
+    Audio: "strawberry.mp3",
+    Picture: "strawberry.jpg"
   },
   {
-    Word: "Wisdom",
-    Definition: "The quality of having experience, knowledge, and good judgment",
-    IPA: "/ˈwɪzdəm/",
-    Example: "With age comes wisdom and understanding.",
-    Example_CN: "随着年龄的增长，智慧和理解力也会增长。",
-    Definition_CN: "n. 智慧；明智",
-    Audio: "wisdom.mp3",
-    Picture: "https://images.pexels.com/photos/256541/pexels-photo-256541.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "apple",
+    IPA: "/ˈæpəl/",
+    PhonicsChunks: ["a", "pp", "le"],
+    PhonicsIPA: ["/æ/", "/p/", "/əl/"],
+    Definition_CN: "n. 苹果",
+    Example: "I eat an apple every day.",
+    Example_CN: "我每天吃一个苹果。",
+    Audio: "apple.mp3",
+    Picture: "apple.jpg"
   },
   {
-    Word: "Harmony",
-    Definition: "The combination of simultaneously sounded musical notes to produce chords and chord progressions",
-    IPA: "/ˈhɑːməni/",
-    Example: "The choir sang in perfect harmony during the performance.",
-    Example_CN: "合唱团在表演中唱出了完美的和声。",
-    Definition_CN: "n. 和谐；和声",
-    Audio: "harmony.mp3",
-    Picture: "https://images.pexels.com/photos/164745/pexels-photo-164745.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "happiness",
+    IPA: "/ˈhæpɪnəs/",
+    PhonicsChunks: ["hap", "pi", "ness"],
+    PhonicsIPA: ["/hæp/", "/pɪ/", "/nəs/"],
+    Definition_CN: "n. 幸福；快乐",
+    Example: "Happiness comes from within, not from material things.",
+    Example_CN: "幸福来自内心，而不是物质。",
+    Audio: "happiness.mp3",
+    Picture: "happiness.jpg"
   },
   {
-    Word: "Resilience",
-    Definition: "The capacity to recover quickly from difficulties; toughness",
-    IPA: "/rɪˈzɪliəns/",
-    Example: "Her resilience helped her overcome many challenges in life.",
-    Example_CN: "她的坚韧不拔帮助她克服了生活中的许多挑战。",
-    Definition_CN: "n. 韧性；恢复力",
-    Audio: "resilience.mp3",
-    Picture: "https://images.pexels.com/photos/1181772/pexels-photo-1181772.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "mountain",
+    IPA: "/ˈmaʊntɪn/",
+    PhonicsChunks: ["moun", "t", "ain"],
+    PhonicsIPA: ["/maʊn/", "/t/", "/ɪn/"],
+    Definition_CN: "n. 山；山脉",
+    Example: "The mountain peak was covered with snow.",
+    Example_CN: "山峰被雪覆盖着。",
+    Audio: "mountain.mp3",
+    Picture: "mountain.jpg"
   },
   {
-    Word: "Serenity",
-    Definition: "The state of being calm, peaceful, and untroubled",
-    IPA: "/səˈrenəti/",
-    Example: "The serenity of the mountain lake was breathtaking.",
-    Example_CN: "山湖的宁静令人叹为观止。",
-    Definition_CN: "n. 宁静；平静",
-    Audio: "serenity.mp3",
-    Picture: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "guitar",
+    IPA: "/ɡɪˈtɑːr/",
+    PhonicsChunks: ["gui", "t", "ar"],
+    PhonicsIPA: ["/ɡɪ/", "/t/", "/ɑːr/"],
+    Definition_CN: "n. 吉他",
+    Example: "He plays the guitar beautifully.",
+    Example_CN: "他弹吉他很好听。",
+    Audio: "guitar.mp3",
+    Picture: "guitar.jpg"
   },
   {
-    Word: "Excellence",
-    Definition: "The quality of being outstanding or extremely good",
-    IPA: "/ˈeksələns/",
-    Example: "The restaurant is known for its excellence in both food and service.",
-    Example_CN: "这家餐厅以其出色的食物和服务而闻名。",
-    Definition_CN: "n. 卓越；优秀",
-    Audio: "excellence.mp3",
-    Picture: "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&dpr=1"
+    Word: "whisper",
+    IPA: "/ˈwɪspər/",
+    PhonicsChunks: ["whi", "sp", "er"],
+    PhonicsIPA: ["/wɪ/", "/sp/", "/ər/"],
+    Definition_CN: "v. 低语；耳语",
+    Example: "She whispered the secret to her friend.",
+    Example_CN: "她向朋友低声说出了秘密。",
+    Audio: "whisper.mp3",
+    Picture: "whisper.jpg"
   }
 ];

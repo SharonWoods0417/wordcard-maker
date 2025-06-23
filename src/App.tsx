@@ -48,6 +48,9 @@ interface ProcessedWordData extends WordData {
   Definition_CN: string;
   Audio: string;
   Picture: string;
+  // 新增字段支持拼读教学
+  PhonicsChunks: string[] | string;
+  PhonicsIPA: string[] | string;
 }
 
 type AppStatus = 'idle' | 'uploading' | 'uploaded' | 'uploadError' | 'generating' | 'generated' | 'generationError' | 'exporting';
@@ -189,7 +192,10 @@ function App() {
       Example_CN: word.Example_CN || `这是一个包含 ${word.Word} 的例句。`,
       Definition_CN: word.Definition_CN || `n. ${word.Word}的中文释义`,
       Audio: word.Audio ? (word.Audio.startsWith('/media/') ? word.Audio : `/media/${word.Audio}`) : `/media/${word.Word.toLowerCase()}.mp3`,
-      Picture: word.Picture ? (word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`) : `/media/${word.Word.toLowerCase()}.jpg`
+      Picture: word.Picture ? (word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`) : `/media/${word.Word.toLowerCase()}.jpg`,
+      // 添加默认的拼读字段
+      PhonicsChunks: [],
+      PhonicsIPA: []
     };
 
     console.log(`Generated card for: ${word.Word} using local resources`);

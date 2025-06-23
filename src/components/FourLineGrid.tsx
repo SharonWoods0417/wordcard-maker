@@ -28,11 +28,12 @@ export const FourLineGrid: React.FC<FourLineGridProps> = ({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="xMidYMid meet"
       style={{
         display: 'block',
         margin: '0 auto',
         width: '100%',
-        height: '80px', // 固定高度，确保不会因字体大小而变化
+        height: '100%', // 继承外部容器高度，不再固定80px
         maxWidth: '100%'
       }}
     >
@@ -81,48 +82,19 @@ export const FourLineGrid: React.FC<FourLineGridProps> = ({
         strokeDasharray="4,4"
       />
       
-      {/* 单词展示 - 优化字母间距和样式 */}
+      {/* 单词展示 - 统一字体大小和间距 */}
       <text
-        y="100"
-        fontFamily="'Comic Sans MS', 'Patrick Hand', 'Baloo 2', 'Fredoka', 'Schoolbell', sans-serif"
-        fontSize="100"
-        fontWeight="600"
+        x={width / 2}
+        y={100} // 基线位置
+        fontFamily="'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif"
+        fontSize={Math.min(80, height * 0.53)} // 统一字体大小
+        fontWeight="400"
         fill="#000000"
+        textAnchor="middle"
         dominantBaseline="alphabetic"
+        letterSpacing="0.05em" // 统一字母间距
       >
-        {word.split('').map((letter, index) => {
-          const lowerChar = letter.toLowerCase();
-          
-          // 计算字母的x位置（居中排列）- 增加间距以改善字母显示
-          const letterSpacing = Math.min(width * 0.09, 54 * (width / 600)); // 增加间距系数
-          const totalWidth = word.length * letterSpacing;
-          const startX = (width - totalWidth) / 2 + letterSpacing / 2;
-          const letterX = startX + index * letterSpacing;
-          
-          // 根据字母类型精确设置位置调整
-          let dy = 0;
-          
-          if (['g', 'j', 'p', 'q', 'y'].includes(lowerChar)) {
-            // 下降字母：p 的下端应靠近第四线（y=140）
-            dy = 0; // 基线对齐，让下降部分自然延伸到第四线
-          } else if (['b', 'd', 'f', 'h', 'k', 'l', 't'].includes(lowerChar)) {
-            // 上升字母：l 的上端应靠近第一线（y=20）
-            dy = 0; // 基线对齐，让上升部分自然延伸到第一线
-          } else {
-            // 中格字母：a、e 等应正好占满第二线至第三线之间
-            dy = 0; // 基线对齐
-          }
-          
-          return (
-            <tspan
-              key={index}
-              x={letterX}
-              dy={dy}
-            >
-              {letter}
-            </tspan>
-          );
-        })}
+        {word}
       </text>
     </svg>
   );

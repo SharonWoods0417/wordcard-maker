@@ -1,25 +1,27 @@
 import React from 'react';
 import { WordCard } from './WordCard';
 
-// 示例卡片数据
+// 示例卡片数据 - 更新为新字段结构
 const showcaseWords = [
   {
     Word: "adventure",
-    Definition: "an exciting or unusual experience",
     IPA: "/ədˈventʃər/",
+    PhonicsChunks: ["ad", "ven", "t", "ure"],
+    PhonicsIPA: ["/əd/", "/ven/", "/t/", "/ʃər/"],
+    Definition_CN: "n. 冒险；奇遇",
     Example: "Their trip to the mountains was a great adventure",
     Example_CN: "他们的山区之旅是一次很棒的冒险",
-    Definition_CN: "n. 冒险；奇遇",
     Audio: "adventure.mp3",
     Picture: "adventure.jpg"
   },
   {
     Word: "knowledge",
-    Definition: "information and skills acquired through experience",
     IPA: "/ˈnɒlɪdʒ/",
+    PhonicsChunks: ["know", "l", "edge"],
+    PhonicsIPA: ["/nəʊ/", "/l/", "/ɪdʒ/"],
+    Definition_CN: "n. 知识；学问",
     Example: "Knowledge is power in the modern world",
     Example_CN: "在现代世界，知识就是力量",
-    Definition_CN: "n. 知识；学问",
     Audio: "knowledge.mp3",
     Picture: "knowledge.jpg"
   }
@@ -38,10 +40,10 @@ export const CardShowcaseSection: React.FC = () => {
             Sample Word Cards
           </h3>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            专业设计的单词卡片，包含音标、释义、例句等完整信息
+            专业设计的单词卡片，包含拼读教学、音标、释义、例句等完整信息
           </p>
           <p className="text-base text-gray-500 mt-2">
-            Professional word cards with phonetics, definitions, and examples
+            Professional word cards with phonics teaching, phonetics, definitions, and examples
           </p>
         </div>
 

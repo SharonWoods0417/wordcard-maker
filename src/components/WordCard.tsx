@@ -1,15 +1,17 @@
 import React from 'react';
 import { FourLineGrid } from './FourLineGrid';
 
+// 新的字段结构，对应CSV格式
 interface ProcessedWordData {
-  Word: string;
-  Definition: string;
-  IPA: string;
-  Example: string;
-  Example_CN: string;
-  Definition_CN: string;
-  Audio: string;
-  Picture: string;
+  Word: string;                           // 单词本身，主显示内容
+  IPA: string;                            // 音标（完整显示）
+  PhonicsChunks: string[] | string;       // 拼读拆分块，逗号分隔的拼读单元
+  PhonicsIPA: string[] | string;          // 对应每个拼读块的音标，逗号分隔
+  Definition_CN: string;                  // 中文释义（简洁）
+  Example: string;                        // 英文例句
+  Example_CN: string;                     // 例句中文解释
+  Picture: string;                        // 图片
+  Audio: string;                          // 音频（暂未使用）
 }
 
 interface WordCardProps {
@@ -18,43 +20,70 @@ interface WordCardProps {
   className?: string;
 }
 
+// 拼读块颜色映射
+const phonicsColors = [
+  { bgColor: 'bg-blue-100', textColor: 'text-blue-800', borderColor: 'border-blue-200' },
+  { bgColor: 'bg-red-100', textColor: 'text-red-800', borderColor: 'border-red-200' },
+  { bgColor: 'bg-green-100', textColor: 'text-green-800', borderColor: 'border-green-200' },
+  { bgColor: 'bg-orange-100', textColor: 'text-orange-800', borderColor: 'border-orange-200' },
+  { bgColor: 'bg-purple-100', textColor: 'text-purple-800', borderColor: 'border-purple-200' },
+  { bgColor: 'bg-pink-100', textColor: 'text-pink-800', borderColor: 'border-pink-200' },
+  { bgColor: 'bg-indigo-100', textColor: 'text-indigo-800', borderColor: 'border-indigo-200' },
+  { bgColor: 'bg-yellow-100', textColor: 'text-yellow-800', borderColor: 'border-yellow-200' },
+  { bgColor: 'bg-teal-100', textColor: 'text-teal-800', borderColor: 'border-teal-200' },
+  { bgColor: 'bg-cyan-100', textColor: 'text-cyan-800', borderColor: 'border-cyan-200' }
+];
+
 /* ========================================
- * 已验证布局 - 固定尺寸卡片组件
+ * 新版单词卡片 - Bolt设计标准
  * ======================================== 
  * 
- * ✅ 此版本已经过用户确认，各项排版均已达标：
- * - 固定卡片尺寸，不随内容变化
- * - 图片保持4:3比例，不会拉伸变形
- * - 四线三格书写教学标准布局
- * - 每页固定显示4张卡片（2x2布局）
+ * ✅ 按照Bolt提供的HTML模板重新设计：
+ * - 卡片最大宽度: 280px，防止过度拉伸
+ * - 宽高比: 3:4 (aspect-[3/4])
+ * - 正面区域分配: 图片35% + 单词25% + 音标12% + 拼读28%
+ * - 集成拼读教学功能
+ * - 保留SVG四线三格精确对齐
+ * - 彩色拼读块显示
  * 
- * ⚠️ 重要提醒：
- * 请保持这个设计作为后续所有卡片的统一模板
- * 不要随意修改尺寸或布局结构
- * 如有修改需求，请先与用户确认
- * 
- * 最后确认时间：2024年
+ * 🎯 设计特色：
+ * - 儿童友好的大图片设计
+ * - 手写体字体(Kalam)单词显示
+ * - 彩色拼读块区分不同音素
+ * - 专业的四线三格书写对齐
  * ======================================== */
 
 export const WordCard: React.FC<WordCardProps> = ({ word, side, className = '' }) => {
+  // 处理拼读块数据，确保是数组格式
+  const phonicsChunks = Array.isArray(word.PhonicsChunks) 
+    ? word.PhonicsChunks 
+    : (typeof word.PhonicsChunks === 'string' ? word.PhonicsChunks.split(',').map((s: string) => s.trim()) : []);
+  
+  const phonicsIPA = Array.isArray(word.PhonicsIPA) 
+    ? word.PhonicsIPA 
+    : (typeof word.PhonicsIPA === 'string' ? word.PhonicsIPA.split(',').map((s: string) => s.trim()) : []);
+
+  // 判断是否为预览区卡片
+  const isPrintCard = className.includes('print-card');
+
   if (side === 'front') {
     return (
-      <div 
-        className={`w-full h-full bg-white border border-gray-300 ${className}`}
-        style={{ 
-          boxSizing: 'border-box',
-          minHeight: '0',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
-          {/* Picture Section - 已验证布局，请勿随意修改 */}
-          <div className="picture-container">
+      <div className={`${isPrintCard ? 'w-full h-full print-card' : 'w-full max-w-[280px]'} ${isPrintCard ? '' : 'group cursor-pointer'}`} style={isPrintCard ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
+        <div className={`${isPrintCard ? 'print-card-content w-full h-full' : ''} bg-white ${isPrintCard ? 'rounded-none' : 'rounded-2xl'} ${isPrintCard ? '' : 'shadow-lg border border-gray-200'} ${isPrintCard ? '' : 'aspect-[3/4]'} overflow-hidden ${isPrintCard ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isPrintCard ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
+          
+          {/* 正面标签 */}
+          <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10" style={{ zIndex: 100 }}>
+            正面 Front
+          </div>
+          
+          {/* 图片区域 - 占比35% */}
+          <div className="h-[35%] bg-gray-100 relative">
             <img 
               src={word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`} 
               alt={word.Word}
-              className="card-image"
+              className="w-full h-full object-cover"
+              crossOrigin="anonymous"
+              loading="eager"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
@@ -63,232 +92,125 @@ export const WordCard: React.FC<WordCardProps> = ({ word, side, className = '' }
             />
           </div>
           
-          {/* Word Section with Four-Line Grid - Middle 1/3 */}
-          <div 
-            style={{ 
-              flex: '1 1 33.333%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '16px'
-            }}
-          >
-            {/* SVG Four-Line Writing Grid - 教学标准精确版本 */}
-            <div style={{ marginBottom: '0px' }}>
-              <FourLineGrid word={word.Word} width={600} height={150} />
+          {/* 单词区域 - 占比25% */}
+          <div className="h-[25%] px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-center">
+            <div className="relative w-full">
+              {/* 使用SVG四线三格，保持精确对齐 */}
+              <div 
+                className="flex justify-center"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <FourLineGrid word={word.Word} width={600} height={150} />
+              </div>
             </div>
-            
-            {/* IPA - 优化与单词的距离 */}
-            <p 
-              style={{
-                margin: 0,
-                marginTop: '0px', // 适中距离，既不太近也不太远
-                fontSize: '22px',
-                lineHeight: '1.2',
-                fontWeight: '500',
-                color: '#6b7280',
-                fontFamily: 'monospace',
-                textAlign: 'center'
-              }}
-            >
+          </div>
+          
+          {/* 音标区域 - 占比12%，与单词距离更近 */}
+          <div className="h-[12%] px-3 flex items-center justify-center">
+            <p className="text-base font-bold text-blue-700">
               {word.IPA}
             </p>
           </div>
           
-          {/* Definition Section - Bottom 1/3 */}
-          <div 
-            style={{ 
-              flex: '1 1 33.333%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '16px 24px'
-            }}
-          >
-            <p 
-              style={{ 
-                fontSize: '16px',
-                lineHeight: '1.4',
-                margin: 0,
-                width: '100%',
-                textAlign: 'center',
-                color: '#374151',
-                fontWeight: '400'
-              }}
-            >
-              {word.Definition}
-            </p>
+          {/* 自然拼读区域 - 占比28%，分解上提 */}
+          <div className="h-[28%] px-2 py-2 border-t border-gray-100 flex flex-col justify-start">
+            <div className="space-y-1.5">
+                             {/* 音节分解 - 动态生成拼读块，每个块不同颜色 */}
+               <div className="flex justify-center space-x-1 flex-wrap gap-1">
+                 {phonicsChunks.map((chunk: string, index: number) => {
+                   const color = phonicsColors[index % phonicsColors.length];
+                   return (
+                     <div 
+                       key={index}
+                       className={`${color.bgColor} ${color.textColor} ${color.borderColor} px-1.5 py-1 rounded text-xs font-bold border`}
+                     >
+                       {chunk}
+                     </div>
+                   );
+                 })}
+               </div>
+               
+               {/* 音标对应 - 统一灰色样式 */}
+               <div className="flex justify-center space-x-1 flex-wrap gap-1">
+                 {phonicsIPA.map((ipa: string, index: number) => (
+                   <div 
+                     key={index}
+                     className="bg-gray-100 text-gray-700 px-1 py-0.5 rounded text-xs"
+                   >
+                     {ipa}
+                   </div>
+                 ))}
+               </div>
+            </div>
           </div>
         </div>
+      </div>
     );
   }
 
   /* ========================================
-   * 背面卡片标准版本 - 已确认设计
+   * 背面卡片 - Bolt设计标准
    * ======================================== 
    * 
-   * ✅ 此版本已经过用户确认，各项排版均已达标：
-   * - 发音和释义的排版清晰
-   * - 中文释义样式突出（浅蓝背景）
-   * - 英文例句悬挂缩进对齐逻辑正确
-   * - 中英文例句之间的间距合适（紧凑成对）
-   * - 整体垂直位置合适，适配最多三组例句
-   * 
-   * ⚠️ 重要提醒：
-   * 请保持这个设计作为后续所有卡片背面的统一模板
-   * 如果以后有新的修改建议，用户会单独说明
-   * 当前版本请作为标准保持不变，不要随意调整
-   * 
-   * 最后确认时间：2024年
+   * ✅ 按照Bolt提供的反面模板设计：
+   * - 音标区域顶部显示
+   * - 中文释义区域突出显示
+   * - 例句区域包含英文和中文
+   * - 简洁清晰的布局
+   * - 响应式设计
    * ======================================== */
   
   return (
-    <div 
-      className={`w-full h-full bg-white border-2 border-gray-200 rounded-lg ${className}`}
-      style={{ 
-        boxSizing: 'border-box',
-        minHeight: '0',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '20px 24px'
-      }}
-    >
-      {/* 内容容器 - 稍偏下的垂直居中，预留三组例句空间 */}
-      <div style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        transform: 'translateY(5%)',
-        minHeight: '75%'
-      }}>
-      {/* IPA 音标 - 顶部显示，最大字号 */}
-      <div style={{ marginBottom: '18px' }}>
-        <p style={{
-          fontSize: '24px',
-          lineHeight: '1.2',
-          color: '#6b7280',
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          margin: 0,
-          fontWeight: '500'
-        }}>
-          {word.IPA}
-        </p>
-      </div>
-      
-      {/* 中文释义区 - 支持多释义，次大字号 */}
-      <div style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          backgroundColor: '#E6F2FF',
-          padding: '12px 20px',
-          borderRadius: '8px',
-          textAlign: 'center',
-          width: 'fit-content',
-          minWidth: '60%'
-        }}>
-          <p style={{
-            fontSize: '20px',
-            lineHeight: '1.4',
-            color: '#374151',
-            margin: 0,
-            fontWeight: '600'
-          }}>
-            {word.Definition_CN}
-          </p>
+    <div className={`${isPrintCard ? 'w-full h-full print-card word-card-back' : 'w-full max-w-[280px]'} ${isPrintCard ? '' : 'group cursor-pointer'}`} style={isPrintCard ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
+      <div className={`${isPrintCard ? 'print-card-content w-full h-full' : ''} bg-white ${isPrintCard ? 'rounded-none' : 'rounded-2xl'} ${isPrintCard ? '' : 'shadow-lg border border-gray-200'} ${isPrintCard ? '' : 'aspect-[3/4]'} overflow-hidden ${isPrintCard ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isPrintCard ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
+        
+        {/* 反面标签 */}
+        <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10" style={{ zIndex: 100 }}>
+          反面 Back
         </div>
-      </div>
-      
-      {/* 分隔线 - 拉开释义区与例句区的距离 */}
-      <div style={{
-        width: '75%',
-        height: '1px',
-        backgroundColor: '#d1d5db',
-        margin: '0 0 20px 0'
-      }}></div>
-      
-      {/* 例句区域 - 左对齐排版，第三大字号 */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '20px',
-        width: '100%',
-        maxWidth: '90%',
-        flex: '1'
-      }}>
-        {/* 第一组例句 - 英文和中文作为一个整体 */}
-        <div style={{
-          paddingLeft: '8px'
-        }}>
-          {/* 英文例句 - 悬挂缩进效果 */}
-          <div style={{
-            display: 'flex',
-            marginBottom: '4px'
-          }}>
-            {/* 序号部分 - 固定宽度 */}
-            <span style={{
-              fontSize: '16px',
-              lineHeight: '1.5',
-              color: '#374151',
-              fontWeight: '400',
-              flexShrink: 0,
-              width: '20px'
-            }}>
-              1.
-            </span>
-            
-            {/* 正文部分 - 可换行，悬挂缩进 */}
-            <p style={{ 
-              fontSize: '16px',
-              lineHeight: '1.5',
-              color: '#374151',
-              margin: 0,
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              letterSpacing: '0.3px',
-              fontWeight: '400',
-              textAlign: 'left',
-              flex: 1,
-              paddingLeft: '4px'
-            }}>
-              {word.Example}
+        
+        {/* 顶部留白区域 - 为标签预留空间 */}
+        <div className="h-[12%]"></div>
+        
+        {/* 音标区域 - 占比18% */}
+        <div className="h-[18%] px-3 flex items-center justify-center">
+          <div className="text-center bg-gray-50 rounded-lg py-2 w-full">
+            <p className="text-base font-bold text-blue-700">
+              {word.IPA}
             </p>
           </div>
-          
-          {/* 中文翻译 - 紧贴英文例句，形成一对 */}
-          <div style={{
-            paddingLeft: '24px'
-          }}>
-            <p style={{ 
-              fontSize: '15px',
-              lineHeight: '1.5',
-              color: '#6b7280',
-              margin: 0,
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              fontWeight: '400',
-              textAlign: 'left'
-            }}>
+        </div>
+        
+        {/* 中文释义区域 - 占比20% */}
+        <div className="h-[20%] px-3 flex flex-col justify-center">
+          <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+            <p className="text-xs font-bold text-gray-800 mb-1">中文释义:</p>
+            <p className="text-sm text-gray-700 font-medium">
+              {word.Definition_CN}
+            </p>
+          </div>
+        </div>
+        
+        {/* 例句区域 - 占比50% */}
+        <div className="h-[50%] px-3 pb-3 flex flex-col justify-start">
+          <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 h-full overflow-hidden">
+            <p className="text-xs font-bold text-gray-800 mb-1">例句:</p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-2 font-medium">
+              "{word.Example}"
+            </p>
+            <p className="text-xs font-bold text-gray-800 mb-1">中文解释:</p>
+            <p className="text-sm text-gray-600 leading-relaxed">
               {word.Example_CN}
             </p>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );

@@ -104,21 +104,21 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               /* 首页按钮组 - 显示专业的导航按钮 */
               <>
-                {/* Navigation Items */}
-                <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
-                  <HelpCircle className="w-4 h-4 mr-1" />
-                  帮助 Help
-                </button>
-                
-                <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
-                  <Languages className="w-4 h-4 mr-1" />
-                  中文
-                </button>
-                
-                <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
-                  <Info className="w-4 h-4 mr-1" />
-                  关于 About
-                </button>
+            {/* Navigation Items */}
+            <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
+              <HelpCircle className="w-4 h-4 mr-1" />
+              帮助 Help
+            </button>
+            
+            <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
+              <Languages className="w-4 h-4 mr-1" />
+              中文
+            </button>
+            
+            <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
+              <Info className="w-4 h-4 mr-1" />
+              关于 About
+            </button>
               </>
             )}
 
