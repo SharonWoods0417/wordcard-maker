@@ -1,15 +1,35 @@
+/* 🚨 重要：所有@import必须在最开头，不能有任何其他CSS规则 */
+
 /* Font imports for better typography */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* 教学专用字体 - 独立导入确保可靠性 */
+@import url('https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
 /* 儿童书写教学专用字体 - 四线三格标准 */
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Patrick+Hand:wght@400&family=Caveat:wght@400;500;600;700&family=Schoolbell&family=Fredoka:wght@300;400;500;600;700&family=Architects+Daughter&family=Andika:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Caveat:wght@400;500;600;700&family=Fredoka:wght@300;400;500;600;700&display=swap');
 /* 备用手写字体 */
-@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Dancing+Script:wght@400;500;600;700&family=Delius&family=Kalam:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Dancing+Script:wght@400;500;600;700&family=Delius&display=swap');
 /* 教学字体 */
 @import url('https://fonts.googleapis.com/css2?family=Teachers:wght@400;500;600;700&family=Playwrite+US+Trad:wght@100..400&family=Playwrite+US+Modern:wght@100..400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ========================================
+ * 🎯 终极图片修复方案 - 彻底解决变形问题
+ * ======================================== 
+ * 
+ * 核心原理：
+ * 1. 统一所有图片使用 object-fit: contain（等比缩放）
+ * 2. 浅灰背景填充空白区域，绝不拉伸
+ * 3. 简化CSS规则，减少冲突
+ * 4. 35%容器高度保持不变
+ * 
+ * ======================================== */
 
 /* 页面尺寸标准化 - A4页面 */
 @page {
@@ -24,16 +44,384 @@
 }
 
 /* ========================================
- * 已验证布局 - 固定尺寸卡片样式
- * ======================================== 
- * 
- * ✅ 此样式确保：
- * - 每张卡片固定350px高度
- * - 内容不会撑开卡片尺寸
- * - 统一的视觉效果
- * 
- * ⚠️ 重要：不要修改这些尺寸设置
+ * 🔥 核心图片修复 - 统一所有图片等比缩放
  * ======================================== */
+
+/* 
+ * 图片显示模式选项 - 用户可选择：
+ * 模式1: object-fit: contain (当前) - 等比缩放适应容器，有空白填充
+ * 模式2: object-fit: none (原尺寸) - 显示原始尺寸，可能被裁剪  
+ * 模式3: object-fit: scale-down - 如果图片比容器大则缩小，否则原尺寸
+ */
+
+/* 终极图片样式 - 当前模式：等比缩放 */
+img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;  /* 改为 none 可显示原尺寸 */
+  object-position: center center !important;
+  background-color: #f8f9fa !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
+
+/* 🎯 原尺寸显示模式 - 取消注释下面的代码来启用原尺寸显示 */
+/*
+img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: none !important;
+  object-position: center center !important;
+  background-color: #f8f9fa !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+}
+*/
+
+/* 🎯 智能缩放模式 - 取消注释下面的代码来启用智能缩放 */
+/*
+img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: scale-down !important;
+  object-position: center center !important;
+  background-color: #f8f9fa !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
+*/
+
+/* 图片容器标准化 */
+.h-\[35\%\] {
+  height: 35% !important;
+  width: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background-color: #f8f9fa !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 🎯 自适应容器模式 - 取消注释下面的代码让容器适应图片尺寸 */
+/*
+.h-\[35\%\] {
+  height: auto !important;
+  min-height: 200px !important;
+  max-height: 350px !important;
+  width: 100% !important;
+  position: relative !important;
+  overflow: visible !important;
+  background-color: #f8f9fa !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px !important;
+}
+*/
+
+/* 打印专用图片优化 */
+.print-page img,
+.print-card img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background-color: #f8f9fa !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  display: block !important;
+}
+
+/* ========================================
+ * 标准卡片尺寸和边框
+ * ======================================== */
+
+.word-card:not(.print-card) {
+  width: 280px !important;
+  height: 400px !important;
+  aspect-ratio: 3/4 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  background: white !important;
+  border: 2px solid #e5e7eb !important; /* 边框恢复 */
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* 确保打印卡片填满容器 */
+.print-card {
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 2px solid #333 !important; /* 打印卡片边框 */
+  border-radius: 8px !important;
+  background: white !important;
+  overflow: hidden !important;
+}
+
+.print-card-content {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ========================================
+ * 打印页面布局 - 与Tailwind grid协调
+ * ======================================== */
+
+.print-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  padding: 10mm !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  background: white !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Tailwind grid增强 - 确保2x2布局正常工作 */
+.print-page .grid {
+  display: grid !important;
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 !important;
+  box-sizing: border-box !important;
+}
+
+/* 兼容Tailwind的grid-cols-2和grid-rows-2 */
+.print-page .grid-cols-2 {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+.print-page .grid-rows-2 {
+  grid-template-rows: 1fr 1fr !important;
+}
+
+/* 网格间距 */
+.print-page .gap-4 {
+  gap: 1rem !important;
+}
+
+/* 网格项容器 */
+.print-page .grid > div {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 空卡片样式 */
+.print-page .border-dashed {
+  border-style: dashed !important;
+  border-width: 2px !important;
+  border-color: #d1d5db !important;
+  background-color: #f9fafb !important;
+}
+
+/* 打印页面标题样式 */
+.print-page > div:first-child {
+  text-align: center !important;
+  margin-bottom: 10mm !important;
+  flex-shrink: 0 !important;
+  z-index: 10 !important;
+}
+
+.print-page h2, .print-page h3 {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #333 !important;
+  font-weight: 600 !important;
+}
+
+/* ========================================
+ * 预览卡片网格布局
+ * ======================================== */
+
+/* 预览页面卡片网格 */
+.cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 2rem !important;
+  justify-items: center !important;
+  align-items: start !important;
+  padding: 2rem !important;
+}
+
+/* 预览页面2x2布局 */
+.preview-grid-2x2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-rows: 1fr 1fr !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+  max-width: 800px !important;
+  margin: 0 auto !important;
+  padding: 2rem !important;
+}
+
+.preview-grid-2x2 > div {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* ========================================
+ * 响应式调整
+ * ======================================== */
+
+@media (max-width: 768px) {
+  .word-card:not(.print-card) {
+    width: 240px !important;
+    height: 320px !important;
+    aspect-ratio: 3/4 !important;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .preview-grid-2x2 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+  .print-page {
+    width: 100% !important;
+    height: auto !important;
+    padding: 5mm !important;
+  }
+  
+  .print-page .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .print-page .grid-rows-2 {
+    grid-template-rows: repeat(4, 1fr) !important;
+  }
+}
+
+/* ========================================
+ * 打印优化
+ * ======================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* ========================================
+ * 基础样式
+ * ======================================== */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+}
+
+/* ========================================
+ * 四线三格字体保护 - 确保教学字体正确显示
+ * ======================================== */
+
+/* 保护SVG中的教学字体，不被全局样式覆盖 */
+svg text {
+  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif !important;
+  font-weight: 400 !important;
+}
+
+/* 特别保护FourLineGrid组件的字体 */
+.word-card svg text,
+.print-card svg text {
+  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Toast动画已移除，保持界面简洁 */
+
+/* 状态指示器 */
+.status-indicator {
+  position: relative;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-success::after {
+  background-color: #10b981;
+}
+
+.status-error::after {
+  background-color: #ef4444;
+}
+
+.status-loading::after {
+  background-color: #f59e0b;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
 
 /* ========================================
  * 已验证布局 - 竖版卡片固定尺寸
@@ -83,9 +471,9 @@
 .card-image {
   width: 100% !important;
   aspect-ratio: 4 / 3 !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
+  background-color: #f8f9fa !important;
   display: block !important;
-  background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   position: relative !important;
@@ -186,988 +574,6 @@
 }
 
 /* ========================================
- * 预览区卡片样式 - 2x2布局专用 (恢复原状)
- * ======================================== */
-
-/* 旧规则已删除 - 使用下面的终极布局修复 */
-
-/* ==========================================
- * 🎯 终极预览区布局修复 - 确保紫色容器填满绿色容器
- * ========================================== */
-
-/* 核心原理：
- * 1. 移除所有可能的间距干扰（padding, margin, border）
- * 2. 强制所有容器使用 100% 尺寸
- * 3. 使用最高优先级选择器避免被其他规则覆盖
- * 4. 确保box-sizing为border-box
- */
-
-/* 🟢 绿色容器（网格子项）基础设置 */
-.print-page .grid > div {
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: none !important;
-  max-height: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-}
-
-/* 🟡 黄色容器（print-card）强制填充 */
-.print-page .grid > div > .print-card,
-.print-page .grid > div > div.print-card,
-.print-page .print-card {
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: none !important;
-  max-height: none !important;
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  outline: none !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-  background: transparent !important;
-}
-
-/* 🟣 紫色容器（print-card-content）终极填充 */
-.print-page .grid > div > .print-card > .print-card-content,
-.print-page .grid > div > div.print-card > div.print-card-content,
-.print-page .print-card .print-card-content,
-.print-page .print-card-content {
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: none !important;
-  max-height: none !important;
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  outline: none !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-  background-color: white !important;
-  border-radius: 0 !important;
-  overflow: hidden !important;
-}
-
-/* 🚫 移除任何可能干扰的默认样式 */
-.print-page .grid > div *,
-.print-page .print-card *,
-.print-page .print-card-content * {
-  box-sizing: border-box !important;
-}
-
-/* 旧规则已删除 */
-
-
-
-/* 删除重复的网格定义，使用下面统一的定义 */
-
-/* ========================================
- * 🚨 移除冲突的@media print样式
- * 统一使用下面的PDF导出样式
- * ======================================== */
-
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  
-  /* 🔧 打印时确保颜色正确显示 */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-}
-
-/* ========================================
- * 🎯 统一的PDF导出样式 - 适用于网页预览和PDF导出
- * ======================================== */
-.print-page {
-  /* 🔧 修复PDF拉伸问题：使用与html2canvas一致的像素尺寸 */
-  width: 794px !important;
-  height: 1123px !important;
-  background: white !important;
-  margin: 0 auto !important;
-  /* 将4mm转换为像素：4mm ≈ 15px (at 96 DPI) */
-  padding: 15px !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  page-break-after: always !important;
-  page-break-before: auto !important;
-  page-break-inside: avoid !important;
-  
-  /* 🎯 防止内容拉伸的关键设置 */
-  flex-shrink: 0 !important;
-  min-height: 1123px !important;
-  max-height: 1123px !important;
-}
-
-/* 🔧 网格布局 - 固定尺寸，避免拉伸 */
-.print-page .grid {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  grid-template-rows: 1fr 1fr !important;
-  gap: 16px !important; /* 4 * 4px = 16px */
-  flex: 1 !important; /* 占用剩余空间，但不超出 */
-  width: 100% !important;
-  max-height: calc(1123px - 50px) !important; /* 减去padding和header */
-  overflow: hidden !important;
-}
-
-/* 🎯 网格单元格 - 固定比例，不拉伸 */
-.print-page .grid > div {
-  width: 100% !important;
-  aspect-ratio: 8.5/5.5 !important; /* A6比例 */
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Simplified card container - 让Tailwind Grid正常工作 + 卡片边框 */
-.print-page .grid > div {
-  box-sizing: border-box !important;
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
-  border: 2px solid #333333 !important; /* 卡片边缘线 */
-  border-radius: 8px !important; /* 轻微圆角 */
-  width: 100% !important;
-  height: 100% !important;
-  display: block !important;
-}
-
-/* 强制print-card容器正常显示 */
-.print-page .print-card {
-  width: 100% !important;
-  height: 100% !important; /* 保持填满网格单元格 */
-  background: white !important;
-  border: 2px solid #dc2626 !important; /* 红色边框 */
-  border-radius: 8px !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  box-sizing: border-box !important;
-  
-  /* 🎯 防止内容被压缩 */
-  flex-shrink: 0 !important;
-  min-height: 100% !important;
-  max-height: 100% !important;
-}
-
-/* 预览区文字按比例放大 - 相对于展示区(280px)放大约1.8倍 */
-.print-page .print-card p {
-  font-size: 1.8em !important;
-  line-height: 1.2 !important;
-  padding: 0 8px !important; /* 文字内容与边缘保持距离 */
-}
-
-/* 预览区拼读块文字放大 */
-.print-page .print-card div[class*="bg-blue-100"],
-.print-page .print-card div[class*="bg-red-100"],
-.print-page .print-card div[class*="bg-green-100"],
-.print-page .print-card div[class*="bg-orange-100"],
-.print-page .print-card div[class*="bg-purple-100"],
-.print-page .print-card div[class*="bg-pink-100"],
-.print-page .print-card div[class*="bg-indigo-100"],
-.print-page .print-card div[class*="bg-yellow-100"],
-.print-page .print-card div[class*="bg-teal-100"],
-.print-page .print-card div[class*="bg-cyan-100"] {
-  font-size: 1.4em !important;
-  padding: 8px 12px !important;
-  margin: 2px !important;
-}
-
-/* 预览区拼读音标放大 */
-.print-page .print-card div[class*="bg-gray-100"] {
-  font-size: 1.2em !important;
-  padding: 4px 8px !important;
-  margin: 2px !important;
-}
-
-/* 预览区单词区域容器高度限制 */
-.print-page .print-card .h-\[25\%\] {
-  max-height: 120px !important;
-  padding: 0 8px !important; /* 四线三格与边缘保持距离 */
-}
-
-/* 预览区SVG容器调整 - 限制溢出 */
-.print-page .print-card svg {
-  display: block !important;
-  margin: 0 auto !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-
-/* 预览区SVG文字 - 清理样式，保持教学标准对齐 */
-.print-page .print-card svg text {
-  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif !important;
-  font-weight: 400 !important;
-  fill: #000000 !important;
-}
-
-.print-page .print-card svg tspan {
-  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif !important;
-  font-weight: 400 !important;
-  fill: #000000 !important;
-}
-
-/* 预览区线条样式 - 保持原始坐标，只调整外观 */
-.print-page .print-card svg line {
-  stroke-width: 1.5px !important;
-  stroke-dasharray: 3,3 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.print-page .print-card svg line[stroke="#555"] {
-  stroke: #555 !important;
-}
-
-.print-page .print-card svg line[stroke="#dc2626"] {
-  stroke: #dc2626 !important;
-}
-
-/* 预览区拼读块容器调整 */
-.print-page .print-card .space-y-1\.5 {
-  gap: 12px !important;
-}
-
-/* 预览区拼读区域整体调整 */
-.print-page .print-card .h-\[28\%\] {
-  padding: 8px !important; /* 拼读区域与边缘保持距离 */
-}
-
-/* 🎯 PDF导出专用图片容器样式 - 处理各种图片尺寸 */
-.print-page .h-\[35\%\],
-.print-page .print-card .h-\[35\%\] {
-  position: relative !important;
-  overflow: hidden !important;
-  width: 100% !important;
-  /* 🔧 关键修复：不使用百分比高度，改用flex */
-  flex: 0 0 35% !important; /* 固定占用35%空间，不拉伸 */
-  background: #f3f4f6 !important; /* bg-gray-100 */
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  
-  /* 🎯 确保不会被拉伸 */
-  min-height: 0 !important;
-  max-height: none !important;
-}
-
-/* 🎯 PDF导出专用图片样式 - 兼容各种图片尺寸和比例 */
-.print-page img,
-.print-page .card-image,
-.print-page .h-\[35\%\] img {
-  /* 🔧 绝对定位确保完全填充容器 */
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  
-  /* 🎯 尺寸和填充设置 - 兼容不同原始尺寸 */
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center center !important;
-  
-  /* 🎨 显示和渲染设置 */
-  display: block !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  z-index: 1 !important; /* 🔧 降低z-index，避免遮挡页面标题 */
-  margin: 0 !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  
-  /* 🔧 强制设置以确保html2canvas正确捕获 */
-  min-width: 100% !important;
-  min-height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  
-  /* 🎨 图片渲染质量优化 - 针对不同图片格式 */
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
-  image-rendering: optimizeQuality !important;
-  backface-visibility: hidden !important;
-  transform: translateZ(0) !important;
-  
-  /* 🔧 跨浏览器兼容性 */
-  -webkit-transform: translateZ(0) !important;
-  -moz-transform: translateZ(0) !important;
-  -ms-transform: translateZ(0) !important;
-  -o-transform: translateZ(0) !important;
-  
-  /* 📐 确保不被其他CSS规则覆盖 */
-  flex: none !important;
-  align-self: stretch !important;
-  justify-self: stretch !important;
-  
-  /* 🎯 防止图片拖拽影响布局 */
-  user-select: none !important;
-  -webkit-user-drag: none !important;
-  -khtml-user-drag: none !important;
-  -moz-user-drag: none !important;
-  -o-user-drag: none !important;
-  user-drag: none !important;
-  
-  /* 🔧 处理图片加载状态 */
-  opacity: 1 !important;
-  visibility: visible !important;
-  
-  /* 🎯 强制覆盖可能的aspect-ratio设置 */
-  aspect-ratio: auto !important;
-  
-  /* 📱 确保在不同DPI下的一致性 */
-  image-orientation: from-image !important;
-}
-
-/* 🔧 针对特定图片格式的优化 */
-.print-page img[src$=".jpg"],
-.print-page img[src$=".jpeg"],
-.print-page img[src$=".JPG"],
-.print-page img[src$=".JPEG"] {
-  /* JPEG图片特殊优化 */
-  image-rendering: optimizeQuality !important;
-}
-
-.print-page img[src$=".png"],
-.print-page img[src$=".PNG"] {
-  /* PNG图片特殊优化 */
-  image-rendering: -webkit-optimize-contrast !important;
-}
-
-/* 🎯 图片加载失败时的后备处理 */
-.print-page img:not([src]),
-.print-page img[src=""],
-.print-page img[src="#"] {
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-/* SVG Four-Line Writing Grid for print - 支持FourLineGrid组件 */
-.print-page svg {
-  display: block !important;
-  margin: 0 auto !important;
-  margin-bottom: 0px !important;
-  /* 移除固定尺寸，使用组件自身的响应式设计 */
-}
-
-/* Ensure SVG text renders properly in print - 优化字母间距 */
-.print-page svg text {
-  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', cursive !important;
-  font-weight: 400 !important;
-  fill: #000000 !important;
-  text-anchor: middle !important;
-  dominant-baseline: alphabetic !important;
-  /* 移除letterSpacing，使用代码计算的精确位置 */
-}
-
-.print-page svg tspan {
-  font-family: 'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', cursive !important;
-  font-weight: 400 !important;
-  fill: #000000 !important;
-}
-
-/* 🎯 PDF导出时保护页面标题不被遮挡 */
-.print-page > div:first-child {
-  z-index: 10 !important;
-  position: relative !important;
-}
-
-/* 🎯 PDF导出时保护所有标签样式 */
-.print-page .print-card .absolute {
-  z-index: 20 !important;
-  position: absolute !important;
-  
-  /* 强制保留Tailwind样式 */
-  border-radius: 9999px !important; /* rounded-full */
-  font-size: 12px !important; /* text-xs */
-  font-weight: 600 !important; /* font-semibold */
-  color: white !important;
-  padding: 4px 8px !important; /* py-1 px-2 */
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; /* shadow-lg */
-}
-
-/* 蓝色和绿色标签的背景色保护 */
-.print-page .print-card .bg-blue-500 {
-  background-color: #3b82f6 !important;
-}
-
-.print-page .print-card .bg-green-500 {
-  background-color: #10b981 !important;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-/* Custom card styling */
-.word-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-}
-
-/* SVG Four-Line Writing Grid styles */
-svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Smooth transitions */
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Loading animation for images */
-img {
-  transition: opacity 0.3s ease-in-out;
-}
-
-img:not([src]) {
-  opacity: 0;
-}
-
-/* Toast animations */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-bottom {
-  from {
-    transform: translateX(100%) translateY(20px);
-    opacity: 0;
-    scale: 0.95;
-  }
-  to {
-    transform: translateX(0) translateY(0);
-    opacity: 1;
-    scale: 1;
-  }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
-
-.animate-slide-in-bottom {
-  animation: slide-in-bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* Status indicator styles */
-.status-indicator {
-  position: relative;
-}
-
-.status-indicator::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: currentColor;
-}
-
-.status-success::after {
-  background-color: #10b981;
-}
-
-.status-error::after {
-  background-color: #ef4444;
-}
-
-.status-loading::after {
-  background-color: #3b82f6;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* ========================================
-   已验证布局 - 卡片顶部图片样式
-   ======================================== */
-/* 
- * 此样式已通过测试验证，确保：
- * - 图片保持 4:3 横向比例，不会因竖图撑高卡片
- * - 使用 object-fit: cover 确保图片裁切得当
- * - 容器使用 flex 布局防止图片拉伸溢出
- * 
- * ⚠️ 未来不要随意修改此样式，除非有重大布局问题
- */
-.picture-container {
-  /* 容器基础样式 - 已验证 */
-  flex: 1 1 33.333%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  overflow: hidden;
-  
-  /* 背景重置 - 确保图片区域完全干净 */
-  background: transparent !important;
-  background-image: none !important;
-  background-size: auto !important;
-  background-position: initial !important;
-  background-repeat: no-repeat !important;
-  background-color: transparent !important;
-  background-attachment: initial !important;
-  background-clip: initial !important;
-  background-origin: initial !important;
-  position: relative;
-  z-index: 1;
-}
-
-.picture-container * {
-  background: transparent !important;
-  background-image: none !important;
-}
-
-/* 已验证图片样式 - 统一4:3横向比例 */
-.card-image {
-  width: 100% !important;
-  aspect-ratio: 4 / 3 !important;
-  object-fit: cover !important;
-  display: block !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* ========================================
-   CardInner布局 - 卡片内容统一容器
-   ======================================== */
-/* 
- * ✅ 新的布局方式：使用CardInner容器整体垂直居中
- * 
- * 解决的问题：
- * - 内容偏上，底部留白过大的问题
- * - 排版结构紊乱的问题  
- * - 手写线和字体重叠错位的问题
- * 
- * 设计原理：
- * - 使用统一的CardInner容器（width: 100%, height: 100%）
- * - 容器设置 justify-content: center 实现整体垂直居中
- * - 内部元素使用 flex: 0 0 auto 不参与空间分配
- * - 通过 margin 控制元素间距，而非 flex 比例
- * 
- * ⚠️ 重要提醒：
- * 此布局已解决用户反馈的所有问题，请勿随意修改
- * 如需调整，请确保整体垂直居中效果不受影响
- * 
- * 最后确认时间：2024年
- * ======================================== */
-
-/* ========================================
-   调试样式 - 开发环境可选启用
-   ======================================== */
-/* 
- * 取消注释以下样式可以看到布局边框，帮助调试：
- * - 红色边框：整个word-card容器
- * - 蓝色边框：CardInner容器
- * - 绿色边框：图片区域
- * - 黄色边框：单词区域
- * - 紫色边框：定义区域
- */
-
-/*
-.word-card {
-  border: 2px solid red !important;
-}
-
-.word-card > div:first-child {
-  border: 2px solid blue !important;
-}
-
-.word-card img {
-  border: 2px solid green !important;
-}
-
-.word-card svg {
-  border: 2px solid yellow !important;
-}
-
-.word-card p {
-  border: 1px solid purple !important;
-}
-*/
-
-/* ======================================== */
-
-/* ========================================
- * 图片缝隙修复 - 针对WordCard组件
- * ======================================== */
-
-/* 修复图片顶部、左右缝隙问题 */
-.h-\[35\%\] {
-  /* 确保图片容器没有内边距 */
-  padding: 0 !important;
-  margin: 0 !important;
-  /* 确保容器正确显示 */
-  display: block !important;
-  box-sizing: border-box !important;
-}
-
-/* 修复图片显示问题 - 加强选择器优先级 */
-.h-\[35\%\] img,
-.print-card-content .h-\[35\%\] img,
-.word-card .h-\[35\%\] img,
-.bg-white .h-\[35\%\] img {
-  /* 消除图片默认的inline空隙 */
-  display: block !important;
-  /* 确保图片完全填充容器 */
-  width: 100% !important;
-  height: 100% !important;
-  /* 确保图片正确裁切 */
-  object-fit: cover !important;
-  /* 消除任何边距 */
-  margin: 0 !important;
-  padding: 0 !important;
-  /* 消除边框 */
-  border: none !important;
-  /* 确保box-sizing一致 */
-  box-sizing: border-box !important;
-  /* 覆盖可能的aspect-ratio设置 */
-  aspect-ratio: auto !important;
-  /* 确保没有最小/最大尺寸限制 */
-  min-width: 0 !important;
-  max-width: none !important;
-  min-height: 0 !important;
-  max-height: none !important;
-}
-
-/* 确保卡片内容容器对图片区域无影响 */
-.print-card-content .h-\[35\%\],
-.word-card .h-\[35\%\] {
-  /* 重要：图片区域不应有任何内边距 */
-  padding: 0 !important;
-}
-
-/* 针对可能存在的全局卡片内边距进行重置 */
-.bg-white .h-\[35\%\]:first-child {
-  /* 如果图片区域是第一个子元素，确保顶部无缝隙 */
-  margin-top: 0 !important;
-}
-
-/* 图片容器样式 */
-.h-\[35\%\] {
-  /* 红色调试边框已移除 */
-}
-
-/* 🔧 图片填满容器的终极修复 */
-.h-\[35\%\] img {
-  /* 基础显示属性 */
-  display: block !important;
-  /* 尺寸：完全填满容器 */
-  width: 100% !important;
-  height: 100% !important;
-  /* 裁切和定位 */
-  object-fit: cover !important;
-  object-position: center !important;
-  /* 消除所有间距 */
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  /* 覆盖可能的样式冲突 */
-  aspect-ratio: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  /* 确保盒模型一致 */
-  box-sizing: border-box !important;
-}
-
-/* 针对具体的Tailwind类组合进行强制覆盖 */
-img.w-full.h-full.object-cover {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* 🎯 针对WordCard中的所有图片元素 - 最直接的修复 */
-.relative.bg-gray-100 img,
-.h-\[35\%\].bg-gray-100 img,
-.bg-gray-100.relative img {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  box-sizing: border-box !important;
-}
-
-/* 🚀 最高优先级：强制图片填满容器 */
-div[class*="h-[35%]"] > img {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-sizing: border-box !important;
-  /* 确保没有任何尺寸约束 */
-  min-width: 100% !important;
-  min-height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-}
-
-/* 🎯 直接针对图片元素的内联样式覆盖 */
-img[alt][src] {
-  object-fit: cover !important;
-  display: block !important;
-}
-
-/* 🔥 终极覆盖：针对图片容器强制设置 */
-.h-\[35\%\] {
-  overflow: hidden !important;
-  display: block !important;
-}
-
-.h-\[35\%\] > img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* 🎯 专门针对WordCard图片的样式重置 */
-.print-card img,
-.print-card-content img,
-.word-card img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-}
-
-/* 🔧 确保容器也正确设置 */
-.h-\[35\%\].bg-gray-100.relative {
-  position: relative !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* ✅ 图片容器样式 - 修复右侧溢出 */
-.h-\[35\%\] {
-  /* 🚨 确保容器没有任何内边距影响 */
-  padding: 0 !important;
-  margin: 0 !important;
-  
-  /* 🔧 确保容器正确显示和尺寸 */
-  box-sizing: border-box !important;
-  display: block !important;
-  overflow: hidden !important;
-  
-  /* 🎯 修复宽度溢出问题 */
-  position: relative !important;
-  width: calc(100% - 4px) !important; /* 减去边框宽度避免溢出 */
-  max-width: 100% !important;
-  
-  /* 🚫 移除可能的flex或grid影响 */
-  flex: none !important;
-  align-self: stretch !important;
-  justify-self: stretch !important;
-  
-  /* 边框已移除 */
-}
-
-/* ✅ 父级容器样式 - 修复溢出问题 */
-.print-card-content,
-.bg-white.rounded-none {
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  width: 100% !important;
-  overflow: hidden !important; /* 确保父容器隐藏溢出内容 */
-  
-  /* 边框已移除 */
-}
-
-/* 🔵 蓝色边框：图片元素本身 */
-.h-\[35\%\] img {
-  border: 3px solid blue !important;
-  outline: 2px solid cyan !important; /* 额外的青色轮廓，确保可见 */
-  
-  /* 🚨 强制重置所有可能影响布局的属性 */
-  margin: 0 !important;
-  padding: 0 !important;
-  border-width: 0 !important; /* 临时移除边框看看效果 */
-  outline-width: 0 !important; /* 临时移除轮廓看看效果 */
-  
-  /* 🎯 强制填满容器 */
-  width: 100% !important;
-  height: 100% !important;
-  
-  /* 🔧 确保正确的盒模型和显示 */
-  box-sizing: border-box !important;
-  display: block !important;
-  
-  /* 🖼️ 图片填充设置 */
-  object-fit: cover !important;
-  object-position: center !important;
-  
-  /* 🚫 移除可能的变换和定位 */
-  transform: none !important;
-  position: static !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-}
-
-/* ✅ 调试边框已移除 - 图片填充问题已解决 */
-
-/* 🔥 终极重置：针对Tailwind类的强制覆盖 */
-img.w-full.h-full.object-cover,
-.h-\[35\%\] > img.w-full,
-.h-\[35\%\] > img.h-full,
-.h-\[35\%\] > img.object-cover {
-  /* 移除所有边距和边框 */
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  outline: none !important;
-  
-  /* 强制尺寸 */
-  width: 100% !important;
-  height: 100% !important;
-  
-  /* 确保正确显示 */
-  display: block !important;
-  box-sizing: border-box !important;
-  
-  /* 图片填充 */
-  object-fit: cover !important;
-  object-position: center !important;
-  
-  /* 移除默认样式 */
-  vertical-align: baseline !important;
-  line-height: 1 !important;
-}
-
-/* 🎯 针对bg-gray-100容器的额外重置 */
-.h-\[35\%\].bg-gray-100.relative {
-  padding: 0 !important;
-  margin: 0 !important;
-  display: block !important;
-  box-sizing: border-box !important;
-  overflow: hidden !important;
-  position: relative !important;
-}
-
-/* 🚀 终极图片样式 - 最高优先级 */
-div.h-\[35\%\] > img,
-.h-\[35\%\] img,
-.bg-gray-100 img {
-  /* 尺寸强制设置 */
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 100% !important;
-  min-height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  
-  /* 显示和盒模型 */
-  display: block !important;
-  box-sizing: border-box !important;
-  
-  /* 填充方式 */
-  object-fit: cover !important;
-  object-position: center !important;
-  
-  /* 移除所有边距 */
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  
-  /* 定位重置 */
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  
-  /* 确保没有变换 */
-  transform: none !important;
-  
-  /* 移除调试边框 */
-  border: none !important;
-}
-
-/* ========================================
  * 预览区背面卡片样式调整 - 按比例还原展示区设计
  * ======================================== */
 
@@ -1221,4 +627,157 @@ div.h-\[35\%\] > img,
 .print-card.word-card-back .bg-gray-50.py-2 {
   padding-top: 0.75rem !important;
   padding-bottom: 0.75rem !important;
+}
+
+/* ======================================== 
+ * 📝 WordCard 卡片样式
+ * 支持预览和打印两种模式的统一样式系统
+ * ======================================== */
+
+/* 基础卡片容器 */
+.word-card {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  overflow: hidden;
+}
+
+/* 预览模式：用于界面显示，带边框和阴影 */
+.word-card.preview {
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.word-card.preview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 打印模式：用于PDF导出，加粗边框无阴影 */
+.word-card.print {
+  border: 2px solid #333;
+  box-shadow: none;
+  transform: none !important;
+}
+
+/* 图片容器样式 */
+.word-card .image-container {
+  width: 100%;
+  height: 50%; /* 图片占卡片高度的50% */
+  position: relative;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 统一图片样式：在容器内等比显示，多余空间空白 */
+.word-card img {
+  object-fit: contain !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+}
+
+/* 文字内容区域 */
+.word-card .content-area {
+  height: 50%; /* 文字占卡片高度的50% */
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 单词标题 */
+.word-card .word-title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 8px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* 音标样式 */
+.word-card .phonetic {
+  font-size: 1rem;
+  color: #6b7280;
+  text-align: center;
+  font-family: 'Times New Roman', serif;
+  margin-bottom: 6px;
+}
+
+/* 词性标签 */
+.word-card .pos-tag {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+  margin: 0 auto 8px;
+}
+
+/* 中文意思 */
+.word-card .meaning {
+  font-size: 1.1rem;
+  color: #374151;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* 例句样式 */
+.word-card .example {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* 侧标签（Front/Back） */
+.word-card .side-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #3b82f6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ======================================== 
+ * 🖨️ 打印专用样式优化
+ * ======================================== */
+
+@media print {
+  /* 全局打印设置 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* 确保图片在打印时保持等比显示 */
+  .word-card img {
+    object-fit: contain !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* 打印时去除预览样式 */
+  .word-card.preview {
+    border: 2px solid #333 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
 }

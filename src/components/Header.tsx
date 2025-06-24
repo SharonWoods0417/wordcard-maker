@@ -1,10 +1,12 @@
 import React from 'react';
-import { BookText, Upload, Settings, HelpCircle, Languages, Info, Download, Loader2, ChevronLeft, Volume2, Image } from 'lucide-react';
+import { BookText, Upload, Settings, HelpCircle, Languages, Info, Download, Loader2, ChevronLeft, Volume2, Image, Zap } from 'lucide-react';
+import { usePDFExportWithReact } from '../hooks/usePDFExportWithReact';
 
 interface HeaderProps {
   onUploadClick: () => void;
   onGenerateClick: () => void;
-  onExportPDF?: () => void;
+  onExportPDF?: () => void; // 保留接口定义但不使用，避免破坏兼容性
+  onTestPDFLayout?: () => void; // 保留接口定义但不使用，避免破坏兼容性
   status: string;
   uploadedWordCount: number;
   wordsGenerated?: number;
@@ -21,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onUploadClick, 
   onGenerateClick, 
   onExportPDF,
+  onTestPDFLayout,
   status, 
   uploadedWordCount,
   wordsGenerated = 0,
@@ -31,6 +34,8 @@ export const Header: React.FC<HeaderProps> = ({
   onBackToHome,
   parsedWordsCount = 0
 }) => {
+  // 使用PDF导出方式
+  const { renderReactComponentToPDF } = usePDFExportWithReact();
   
   // 判断是否在预览页面
   const isPreviewPage = status === 'generated' || status === 'generating' || status === 'exporting';
@@ -86,24 +91,27 @@ export const Header: React.FC<HeaderProps> = ({
                   图片包
                 </button>
 
-                {/* 下载PDF按钮 */}
-                <button 
-                  onClick={onExportPDF}
-                  disabled={status === 'exporting' || wordsGenerated === 0}
-                  className="flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
-                  title="下载PDF打印文件"
-                >
-                  {status === 'exporting' ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4 mr-1" />
-                  )}
-                  下载PDF
-                </button>
+                {/* PDF导出按钮组 */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {/* 完整PDF导出（所有页面） */}
+                  <button 
+                    onClick={() => renderReactComponentToPDF('wordcards-complete.pdf', 'all')}
+                    disabled={status === 'exporting' || wordsGenerated === 0}
+                    className="flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
+                    title="导出所有页面到一个PDF文件（3倍分辨率）"
+                  >
+                    <Zap className="w-4 h-4 mr-1" />
+                    完整PDF
+                  </button>
+                  
+                  {/* 测试按钮已移除，保持界面简洁 */}
+                </div>
               </>
             ) : (
               /* 首页按钮组 - 显示专业的导航按钮 */
               <>
+            {/* 测试按钮已移除，保持界面简洁 */}
+
             {/* Navigation Items */}
             <button className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm">
               <HelpCircle className="w-4 h-4 mr-1" />
@@ -119,6 +127,8 @@ export const Header: React.FC<HeaderProps> = ({
               <Info className="w-4 h-4 mr-1" />
               关于 About
             </button>
+
+
               </>
             )}
 

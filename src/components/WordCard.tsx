@@ -63,27 +63,33 @@ export const WordCard: React.FC<WordCardProps> = ({ word, side, className = '' }
     ? word.PhonicsIPA 
     : (typeof word.PhonicsIPA === 'string' ? word.PhonicsIPA.split(',').map((s: string) => s.trim()) : []);
 
-  // 判断是否为预览区卡片
-  const isPrintCard = className.includes('print-card');
+  // 判断是否为打印卡片
+  const isForPrint = className.includes('print-card');
 
   if (side === 'front') {
     return (
-      <div className={`${isPrintCard ? 'w-full h-full print-card' : 'w-full max-w-[280px]'} ${isPrintCard ? '' : 'group cursor-pointer'}`} style={isPrintCard ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
-        <div className={`${isPrintCard ? 'print-card-content w-full h-full' : ''} bg-white ${isPrintCard ? 'rounded-none' : 'rounded-2xl'} ${isPrintCard ? '' : 'shadow-lg border border-gray-200'} ${isPrintCard ? '' : 'aspect-[3/4]'} overflow-hidden ${isPrintCard ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isPrintCard ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
+      <div className={`${isForPrint ? 'w-full h-full print-card' : 'w-full max-w-[280px]'} ${isForPrint ? '' : 'group cursor-pointer'}`} style={isForPrint ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
+        <div className={`${isForPrint ? 'print-card-content w-full h-full' : ''} bg-white rounded-lg ${isForPrint ? '' : 'shadow-lg border border-gray-200'} ${isForPrint ? '' : 'aspect-[3/4]'} overflow-hidden ${isForPrint ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isForPrint ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
           
-          {/* 正面标签 */}
-          <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10" style={{ zIndex: 100 }}>
-            正面 Front
-          </div>
+          {/* 正面标签 - 只在非打印版本显示 */}
+          {!isForPrint && (
+            <div className="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
+              正面 Front
+            </div>
+          )}
           
-          {/* 图片区域 - 占比35% */}
-          <div className="h-[35%] bg-gray-100 relative">
+          {/* 图片区域 - 保持35%比例 */}
+          <div className="h-[35%] bg-gray-100 relative overflow-hidden">
             <img 
               src={word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`} 
               alt={word.Word}
-              className="w-full h-full object-cover"
               crossOrigin="anonymous"
               loading="eager"
+              className="w-full h-full object-contain"
+              style={{
+                objectFit: 'contain',
+                objectPosition: 'center'
+              }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
@@ -126,14 +132,46 @@ export const WordCard: React.FC<WordCardProps> = ({ word, side, className = '' }
                <div className="flex justify-center space-x-1 flex-wrap gap-1">
                  {phonicsChunks.map((chunk: string, index: number) => {
                    const color = phonicsColors[index % phonicsColors.length];
-                   return (
-                     <div 
-                       key={index}
-                       className={`${color.bgColor} ${color.textColor} ${color.borderColor} px-1.5 py-1 rounded text-xs font-bold border`}
-                     >
-                       {chunk}
-                     </div>
-                   );
+                   
+                   // 为PDF导出优化：使用内联样式代替动态类名
+                   const getInlineStyles = () => {
+                     const colorMap: Record<string, {bg: string, text: string, border: string}> = {
+                       'bg-blue-100': { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' },
+                       'bg-red-100': { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' },
+                       'bg-green-100': { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' },
+                       'bg-orange-100': { bg: '#fed7aa', text: '#9a3412', border: '#fdba74' },
+                       'bg-purple-100': { bg: '#f3e8ff', text: '#6b21a8', border: '#e9d5ff' },
+                       'bg-pink-100': { bg: '#fce7f3', text: '#9d174d', border: '#fbcfe8' },
+                       'bg-indigo-100': { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe' },
+                       'bg-yellow-100': { bg: '#fef3c7', text: '#92400e', border: '#fde68a' },
+                       'bg-teal-100': { bg: '#ccfbf1', text: '#134e4a', border: '#99f6e4' },
+                       'bg-cyan-100': { bg: '#cffafe', text: '#164e63', border: '#a5f3fc' }
+                     };
+                     
+                     const colorStyle = colorMap[color.bgColor];
+                     return colorStyle ? {
+                       backgroundColor: colorStyle.bg,
+                       color: colorStyle.text,
+                       borderColor: colorStyle.border,
+                       borderWidth: '1px',
+                       borderStyle: 'solid',
+                       borderRadius: '4px',
+                       padding: '4px 6px',
+                       fontSize: '12px',
+                       fontWeight: '700',
+                       display: 'inline-block'
+                     } : {};
+                   };
+                   
+                                        return (
+                       <div 
+                         key={index}
+                         className={isForPrint ? '' : `${color.bgColor} ${color.textColor} ${color.borderColor} px-1.5 py-1 rounded text-xs font-bold border`}
+                         style={isForPrint ? getInlineStyles() : {}}
+                       >
+                         {chunk}
+                       </div>
+                     );
                  })}
                </div>
                
@@ -168,18 +206,20 @@ export const WordCard: React.FC<WordCardProps> = ({ word, side, className = '' }
    * ======================================== */
   
   return (
-    <div className={`${isPrintCard ? 'w-full h-full print-card word-card-back' : 'w-full max-w-[280px]'} ${isPrintCard ? '' : 'group cursor-pointer'}`} style={isPrintCard ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
-      <div className={`${isPrintCard ? 'print-card-content w-full h-full' : ''} bg-white ${isPrintCard ? 'rounded-none' : 'rounded-2xl'} ${isPrintCard ? '' : 'shadow-lg border border-gray-200'} ${isPrintCard ? '' : 'aspect-[3/4]'} overflow-hidden ${isPrintCard ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isPrintCard ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
+    <div className={`${isForPrint ? 'w-full h-full print-card word-card-back' : 'w-full max-w-[280px]'} ${isForPrint ? '' : 'group cursor-pointer'}`} style={isForPrint ? { padding: 0, margin: 0, border: 'none', boxSizing: 'border-box' } : {}}>
+      <div className={`${isForPrint ? 'print-card-content w-full h-full' : ''} bg-white rounded-lg ${isForPrint ? '' : 'shadow-lg border border-gray-200'} ${isForPrint ? '' : 'aspect-[3/4]'} overflow-hidden ${isForPrint ? '' : 'transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10'} relative`} style={isForPrint ? { width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' } : { width: '280px', height: '373px' }}>
         
-        {/* 反面标签 */}
-        <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10" style={{ zIndex: 100 }}>
-          反面 Back
-        </div>
+        {/* 反面标签 - 只在非打印版本显示 */}
+        {!isForPrint && (
+          <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
+            反面 Back
+          </div>
+        )}
         
-        {/* 顶部留白区域 - 为标签预留空间 */}
-        <div className="h-[12%]"></div>
+        {/* 顶部留白区域 - 为标签预留空间（非打印版本） */}
+        <div className={isForPrint ? "h-[6%]" : "h-[12%]"}></div>
         
-        {/* 音标区域 - 占比18% */}
+        {/* 音标区域 - 恢复占比18% */}
         <div className="h-[18%] px-3 flex items-center justify-center">
           <div className="text-center bg-gray-50 rounded-lg py-2 w-full">
             <p className="text-base font-bold text-blue-700">

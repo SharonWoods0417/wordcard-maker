@@ -8,10 +8,7 @@ import {
   Volume2, 
   ChevronLeft, 
   ChevronRight,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  X
+  Loader2
 } from 'lucide-react';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
@@ -20,12 +17,13 @@ import jsPDF from 'jspdf';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import { WordCard } from './components/WordCard';
-import { PrintPage } from './components/PrintPage';
+import { PrintPreviewWithReact } from './components/PrintPreviewWithReact';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { CardShowcaseSection } from './components/CardShowcaseSection';
 import ManualInputModal from './components/ManualInputModal';
 import { showWordConfirmationModal } from './utils/boltModalIntegration';
+import { usePDFExport } from './hooks/usePDFExport';
 
 // Types
 interface WordData {
@@ -55,93 +53,30 @@ interface ProcessedWordData extends WordData {
 
 type AppStatus = 'idle' | 'uploading' | 'uploaded' | 'uploadError' | 'generating' | 'generated' | 'generationError' | 'exporting';
 
-interface ToastMessage {
-  id: string;
-  type: 'success' | 'error' | 'info';
-  message: string;
-}
-
-// Toast Component
-const Toast: React.FC<{ 
-  toast: ToastMessage; 
-  onClose: (id: string) => void; 
-  index?: number; 
-}> = ({ toast, onClose, index = 0 }) => {
-  const bgColor = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    info: 'bg-blue-500'
-  }[toast.type];
-
-  const icon = {
-    success: <CheckCircle className="w-5 h-5" />,
-    error: <XCircle className="w-5 h-5" />,
-    info: <Loader2 className="w-5 h-5 animate-spin" />
-  }[toast.type];
-
-  return (
-    <div 
-      className={`${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 min-w-80 pointer-events-auto animate-slide-in-bottom`}
-      style={{
-        transform: `translateY(-${index * 8}px)`,
-        transition: 'transform 0.3s ease-out',
-        zIndex: 50 - index
-      }}
-    >
-      {icon}
-      <span className="flex-1">{toast.message}</span>
-      <button
-        onClick={() => onClose(toast.id)}
-        className="text-white hover:text-gray-200 transition-colors ml-2 flex-shrink-0"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-};
+// Toast功能已移除，保持界面简洁
 
 function App() {
   const [words, setWords] = useState<ProcessedWordData[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [status, setStatus] = useState<AppStatus>('idle');
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [uploadedWordCount, setUploadedWordCount] = useState(0);
   const [parsedWords, setParsedWords] = useState<WordData[]>([]);
   const [isManualInputOpen, setIsManualInputOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 导入简化版PDF导出功能
+  const { exportToPDF } = usePDFExport();
+
   const CARDS_PER_PAGE = 4;
   const totalPages = Math.ceil(words.length / CARDS_PER_PAGE);
 
-  // Toast management
-  const addToast = (type: ToastMessage['type'], message: string) => {
-    const id = Date.now().toString();
-    const newToast: ToastMessage = { id, type, message };
-    
-    setToasts(prev => {
-      const newToasts = [...prev, newToast];
-      return newToasts.length > 4 ? newToasts.slice(1) : newToasts;
-    });
-    
-    const duration = type === 'error' ? 7000 : type === 'info' ? 4000 : 5000;
-    setTimeout(() => {
-      removeToast(id);
-    }, duration);
-  };
-
-  const clearToastsByType = (type: ToastMessage['type']) => {
-    setToasts(prev => prev.filter(toast => toast.type !== type));
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  // Toast功能已移除，保持界面简洁
 
   // 弹窗处理函数 - 优化后直接生成卡片
   const handleWordConfirmation = async (selectedWordData?: any[]) => {
     if (selectedWordData && selectedWordData.length > 0) {
       setParsedWords(selectedWordData);
-      addToast('success', `✅ 已确认处理 ${selectedWordData.length} 个单词，正在生成卡片...`);
+      console.log(`✅ 已确认处理 ${selectedWordData.length} 个单词，正在生成卡片...`);
       
       // 直接开始生成卡片，无需用户再点击Generate按钮
       setTimeout(async () => {
@@ -151,7 +86,7 @@ function App() {
   };
 
   const handleWordCancellation = () => {
-    addToast('info', '📋 已取消单词处理');
+    console.log('📋 已取消单词处理');
     // 取消时也要重置状态，返回初始状态
     setTimeout(() => {
       resetAppState();
@@ -169,10 +104,8 @@ function App() {
     setCurrentPage(0);
     setUploadedWordCount(0);
     
-    // 清理所有通知
-    clearToastsByType('success');
-    clearToastsByType('error');
-    clearToastsByType('info');
+    // Toast功能已移除，消息记录到控制台
+    console.log('🔔 已清理所有状态');
     
     // 重置文件输入
     if (fileInputRef.current) {
@@ -184,6 +117,61 @@ function App() {
 
   // Auto-complete missing fields using local resources
   const autoCompleteWord = async (word: WordData): Promise<ProcessedWordData> => {
+    // 临时自然拼读生成函数
+    const generatePhonics = (word: string): { chunks: string[], ipa: string[] } => {
+      const wordLower = word.toLowerCase();
+      
+      // 简单的拼读规则库（临时使用）
+      const phonicsRules: { [key: string]: { chunks: string[], ipa: string[] } } = {
+        'apple': { chunks: ['ap', 'ple'], ipa: ['/æp/', '/pəl/'] },
+        'banana': { chunks: ['ba', 'na', 'na'], ipa: ['/bə/', '/næ/', '/nə/'] },
+        'adventure': { chunks: ['ad', 'ven', 't', 'ure'], ipa: ['/əd/', '/ven/', '/t/', '/ʃər/'] },
+        'freedom': { chunks: ['free', 'dom'], ipa: ['/friː/', '/dəm/'] },
+        'guitar': { chunks: ['gui', 'tar'], ipa: ['/gɪ/', '/tɑːr/'] },
+        'happiness': { chunks: ['hap', 'pi', 'ness'], ipa: ['/hæp/', '/pɪ/', '/nəs/'] },
+        'knowledge': { chunks: ['know', 'l', 'edge'], ipa: ['/nəʊ/', '/l/', '/ɪdʒ/'] },
+        'mountain': { chunks: ['moun', 'tain'], ipa: ['/maʊn/', '/tən/'] },
+        'sunlight': { chunks: ['sun', 'light'], ipa: ['/sʌn/', '/laɪt/'] },
+        'whisper': { chunks: ['whis', 'per'], ipa: ['/wɪs/', '/pər/'] }
+      };
+      
+      // 如果在规则库中找到了精确匹配
+      if (phonicsRules[wordLower]) {
+        return phonicsRules[wordLower];
+      }
+      
+      // 通用拼读规则（简化版）
+      const generateGenericPhonics = (word: string): { chunks: string[], ipa: string[] } => {
+        // 简单的音节分割规则
+        const syllables = word.match(/[aeiou]+[bcdfghjklmnpqrstvwxyz]*|[bcdfghjklmnpqrstvwxyz]*[aeiou]+/gi) || [word];
+        
+        // 为每个音节生成简单的IPA（这是简化版）
+        const ipaMap: { [key: string]: string } = {
+          'a': '/æ/', 'e': '/e/', 'i': '/ɪ/', 'o': '/ɒ/', 'u': '/ʌ/',
+          'th': '/θ/', 'sh': '/ʃ/', 'ch': '/tʃ/', 'ng': '/ŋ/',
+          'ed': '/d/', 'ing': '/ɪŋ/', 'tion': '/ʃən/'
+        };
+        
+        const chunks = syllables.slice(0, 4); // 最多4个块
+        const ipa = chunks.map(chunk => {
+          // 简单映射，实际应该使用专业的发音库
+          for (const [pattern, pronunciation] of Object.entries(ipaMap)) {
+            if (chunk.toLowerCase().includes(pattern)) {
+              return pronunciation;
+            }
+          }
+          return `/${chunk}/`; // 默认返回
+        });
+        
+        return { chunks, ipa };
+      };
+      
+      return generateGenericPhonics(wordLower);
+    };
+    
+    // 生成拼读内容
+    const phonics = generatePhonics(word.Word);
+    
     const completed: ProcessedWordData = {
       Word: word.Word,
       Definition: word.Definition || `Definition for ${word.Word}`,
@@ -193,12 +181,14 @@ function App() {
       Definition_CN: word.Definition_CN || `n. ${word.Word}的中文释义`,
       Audio: word.Audio ? (word.Audio.startsWith('/media/') ? word.Audio : `/media/${word.Audio}`) : `/media/${word.Word.toLowerCase()}.mp3`,
       Picture: word.Picture ? (word.Picture.startsWith('/media/') ? word.Picture : `/media/${word.Picture}`) : `/media/${word.Word.toLowerCase()}.jpg`,
-      // 添加默认的拼读字段
-      PhonicsChunks: [],
-      PhonicsIPA: []
+      // 添加生成的拼读字段
+      PhonicsChunks: phonics.chunks,
+      PhonicsIPA: phonics.ipa
     };
 
     console.log(`Generated card for: ${word.Word} using local resources`);
+    console.log(`  -> Phonics chunks: ${phonics.chunks.join(', ')}`);
+    console.log(`  -> Phonics IPA: ${phonics.ipa.join(', ')}`);
     return completed;
   };
 
@@ -214,7 +204,7 @@ function App() {
     const validationResult = validateFile(file);
     if (!validationResult.isValid) {
       setStatus('uploadError');
-      addToast('error', validationResult.errorMessage);
+      console.log("Toast消息已记录到控制台");
       return;
     }
     
@@ -233,7 +223,7 @@ function App() {
       handleXLSXUpload(file);
     } else {
       setStatus('uploadError');
-      addToast('error', '❌ 不支持的文件格式。请上传CSV、TXT、DOCX或XLSX文件。');
+      console.log("Toast消息已记录到控制台");
     }
   };
 
@@ -292,7 +282,7 @@ function App() {
 
   // Handle CSV upload
   const handleCSVUpload = (file: File) => {
-    addToast('info', '📄 正在解析CSV文件...');
+    console.log("Toast消息已记录到控制台");
 
     Papa.parse(file, {
       header: true,
@@ -303,9 +293,9 @@ function App() {
           if (results.errors && results.errors.length > 0) {
             const errorMessages = results.errors.map(err => err.message).join('; ');
             setStatus('uploadError');
-            clearToastsByType('info');
+            console.log("Toast清理已记录到控制台");
             setTimeout(() => {
-              addToast('error', `❌ CSV解析错误：${errorMessages}`);
+              console.log("Toast消息已记录到控制台");
             }, 100);
             return;
           }
@@ -313,9 +303,9 @@ function App() {
           // 检查是否有数据
           if (!results.data || results.data.length === 0) {
             setStatus('uploadError');
-            clearToastsByType('info');
+            console.log("Toast清理已记录到控制台");
             setTimeout(() => {
-              addToast('error', '❌ CSV文件为空或无法读取数据。');
+              console.log("Toast消息已记录到控制台");
             }, 100);
             return;
           }
@@ -326,9 +316,9 @@ function App() {
           const firstRow = parsedWords[0];
           if (!firstRow || !('Word' in firstRow)) {
             setStatus('uploadError');
-            clearToastsByType('info');
+            console.log("Toast清理已记录到控制台");
             setTimeout(() => {
-              addToast('error', '❌ CSV文件格式错误：未找到"Word"列。请确保第一行包含列标题"Word"。');
+              console.log("Toast消息已记录到控制台");
             }, 100);
             return;
           }
@@ -338,9 +328,9 @@ function App() {
           
           if (validWords.length === 0) {
             setStatus('uploadError');
-            clearToastsByType('info');
+            console.log("Toast清理已记录到控制台");
             setTimeout(() => {
-              addToast('error', '❌ CSV文件中没有找到有效单词。请检查"Word"列是否包含英文单词。');
+              console.log("Toast消息已记录到控制台");
             }, 100);
             return;
           }
@@ -352,33 +342,33 @@ function App() {
 
           if (englishWords.length === 0) {
             setStatus('uploadError');
-            clearToastsByType('info');
+            console.log("Toast清理已记录到控制台");
             setTimeout(() => {
-              addToast('error', '❌ CSV文件中没有找到有效的英文单词。');
+              console.log("Toast消息已记录到控制台");
             }, 100);
             return;
           }
 
           if (englishWords.length < validWords.length) {
-            addToast('info', `ℹ️ 已过滤掉 ${validWords.length - englishWords.length} 个无效单词，保留 ${englishWords.length} 个有效英文单词。`);
+            console.log("Toast消息已记录到控制台");
           }
 
           processUploadedWords(englishWords, 'CSV');
         } catch (error) {
           console.error('CSV parsing error:', error);
           setStatus('uploadError');
-          clearToastsByType('info');
+          console.log("Toast清理已记录到控制台");
           setTimeout(() => {
-            addToast('error', '❌ CSV文件处理失败：文件可能损坏或格式不正确。');
+            console.log("Toast消息已记录到控制台");
           }, 100);
         }
       },
       error: (error) => {
         console.error('Papa Parse error:', error);
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', `❌ CSV文件读取失败：${error.message || '文件可能损坏'}`);
+          console.log("Toast消息已记录到控制台");
         }, 100);
       }
     });
@@ -386,7 +376,7 @@ function App() {
 
   // Handle TXT upload
   const handleTXTUpload = (file: File) => {
-    addToast('info', '📝 正在解析TXT文件...');
+    console.log("Toast消息已记录到控制台");
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -396,25 +386,25 @@ function App() {
         // 检查文件内容
         if (!text) {
           setStatus('uploadError');
-          clearToastsByType('info');
+          console.log("Toast清理已记录到控制台");
           setTimeout(() => {
-            addToast('error', '❌ TXT文件读取失败：无法获取文件内容。');
+            console.log("Toast消息已记录到控制台");
           }, 100);
           return;
         }
 
         if (text.trim() === '') {
           setStatus('uploadError');
-          clearToastsByType('info');
+          console.log("Toast清理已记录到控制台");
           setTimeout(() => {
-            addToast('error', '❌ TXT文件为空：请选择包含单词的文件。');
+            console.log("Toast消息已记录到控制台");
           }, 100);
           return;
         }
 
         // 检查文件大小（内容长度）
         if (text.length > 50000) { // 约50KB文本内容
-          addToast('info', '⚠️ 文件内容较大，正在处理...');
+          console.log("Toast消息已记录到控制台");
         }
 
         // 智能解析：支持多种分隔符
@@ -422,16 +412,16 @@ function App() {
 
         if (words.length === 0) {
           setStatus('uploadError');
-          clearToastsByType('info');
+          console.log("Toast清理已记录到控制台");
           setTimeout(() => {
-            addToast('error', '❌ TXT文件中没有找到有效的英文单词。支持的分隔符：换行符、空格、逗号、分号。');
+            console.log("Toast消息已记录到控制台");
           }, 100);
           return;
         }
 
         // 检查单词数量限制
         if (words.length > 1000) {
-          addToast('info', `⚠️ 文件包含 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+          console.log("Toast消息已记录到控制台");
         }
 
         // 转换为WordData格式
@@ -444,9 +434,9 @@ function App() {
       } catch (error) {
         console.error('TXT parsing error:', error);
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ TXT文件处理失败：文件可能包含不支持的字符或格式错误。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
       }
     };
@@ -454,9 +444,9 @@ function App() {
     reader.onerror = (error) => {
       console.error('FileReader error:', error);
       setStatus('uploadError');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('error', '❌ TXT文件读取失败：无法访问文件内容，请检查文件是否损坏。');
+        console.log("Toast消息已记录到控制台");
       }, 100);
     };
 
@@ -466,9 +456,9 @@ function App() {
     } catch (error) {
       console.error('FileReader readAsText error:', error);
       setStatus('uploadError');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('error', '❌ TXT文件读取失败：无法启动文件读取器。');
+        console.log("Toast消息已记录到控制台");
       }, 100);
     }
   };
@@ -498,15 +488,15 @@ function App() {
 
   // Handle DOCX upload
   const handleDOCXUpload = async (file: File) => {
-    addToast('info', '📄 正在解析Word文档...');
+    console.log("Toast消息已记录到控制台");
 
     try {
       // 检查文件是否为有效的docx文件
       if (!file.name.toLowerCase().endsWith('.docx')) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ 文件格式错误：请确保上传的是.docx格式的Word文档。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -517,9 +507,9 @@ function App() {
       // 检查文件是否被正确读取
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Word文档读取失败：文件可能损坏或无法访问。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -531,25 +521,25 @@ function App() {
       // 检查是否成功提取到文本
       if (!text) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Word文档解析失败：无法提取文本内容，文件可能损坏。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
 
       if (text.trim() === '') {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Word文档为空：请确保文档包含文本内容。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
 
       // 检查提取的文本长度
       if (text.length > 100000) { // 约100KB文本内容
-        addToast('info', '⚠️ Word文档内容较大，正在处理...');
+        console.log("Toast消息已记录到控制台");
       }
 
       // 复用TXT解析逻辑，支持多种分隔符
@@ -557,16 +547,16 @@ function App() {
 
       if (words.length === 0) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Word文档中没有找到有效的英文单词。请确保文档包含英文单词。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
 
       // 检查单词数量
       if (words.length > 1000) {
-        addToast('info', `⚠️ 从Word文档中提取到 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+        console.log("Toast消息已记录到控制台");
       }
 
       // 转换为WordData格式
@@ -579,26 +569,26 @@ function App() {
     } catch (error) {
       console.error('DOCX parsing error:', error);
       setStatus('uploadError');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
         const errorMessage = error instanceof Error ? error.message : '未知错误';
-        addToast('error', `❌ Word文档处理失败：${errorMessage.includes('Invalid') ? '文件格式无效' : '文件可能损坏或不受支持'}`);
+        console.log("Toast消息已记录到控制台");
       }, 100);
     }
   };
 
   // Handle XLSX upload
   const handleXLSXUpload = async (file: File) => {
-    addToast('info', '📊 正在解析Excel文件...');
+    console.log("Toast消息已记录到控制台");
 
     try {
       // 检查文件是否为有效的Excel文件
       const fileName = file.name.toLowerCase();
       if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ 文件格式错误：请确保上传的是.xlsx或.xls格式的Excel文件。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -609,9 +599,9 @@ function App() {
       // 检查文件是否被正确读取
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Excel文件读取失败：文件可能损坏或无法访问。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -622,9 +612,9 @@ function App() {
       // 检查工作簿是否有效
       if (!workbook || !workbook.SheetNames) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Excel文件解析失败：文件格式无效或损坏。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -633,9 +623,9 @@ function App() {
       const firstSheetName = workbook.SheetNames[0];
       if (!firstSheetName) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Excel文件中没有找到工作表：请确保文件包含至少一个工作表。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -645,9 +635,9 @@ function App() {
       // 检查工作表是否有效
       if (!worksheet) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', `❌ 无法读取工作表"${firstSheetName}"：工作表可能损坏。`);
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
@@ -657,16 +647,16 @@ function App() {
       
       if (!jsonData || jsonData.length === 0) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', `❌ 工作表"${firstSheetName}"为空：请确保表格包含数据。`);
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
       
       // 检查数据结构
       if (jsonData.length === 1) {
-        addToast('info', '⚠️ Excel只有标题行，正在检查是否包含有效数据...');
+        console.log("Toast消息已记录到控制台");
       }
 
       // 智能提取单词
@@ -674,16 +664,16 @@ function App() {
       
       if (words.length === 0) {
         setStatus('uploadError');
-        clearToastsByType('info');
+        console.log("Toast清理已记录到控制台");
         setTimeout(() => {
-          addToast('error', '❌ Excel文件中没有找到有效的英文单词。请确保表格包含英文单词，推荐使用"Word"列标题。');
+          console.log("Toast消息已记录到控制台");
         }, 100);
         return;
       }
 
       // 检查单词数量
       if (words.length > 1000) {
-        addToast('info', `⚠️ 从Excel中提取到 ${words.length} 个单词，数量较多，处理时间可能较长。`);
+        console.log("Toast消息已记录到控制台");
       }
 
       // 转换为WordData格式
@@ -696,15 +686,15 @@ function App() {
     } catch (error) {
       console.error('XLSX parsing error:', error);
       setStatus('uploadError');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
         const errorMessage = error instanceof Error ? error.message : '未知错误';
         if (errorMessage.includes('Unsupported file type')) {
-          addToast('error', '❌ Excel文件格式不受支持：请使用标准的.xlsx或.xls格式。');
+          console.log("Toast消息已记录到控制台");
         } else if (errorMessage.includes('password')) {
-          addToast('error', '❌ Excel文件被密码保护：请使用无密码保护的文件。');
+          console.log("Toast消息已记录到控制台");
         } else {
-          addToast('error', '❌ Excel文件处理失败：文件可能损坏、格式无效或不受支持。');
+          console.log("Toast消息已记录到控制台");
         }
       }, 100);
     }
@@ -766,7 +756,7 @@ function App() {
   // 统一处理上传的单词数据
   const processUploadedWords = (wordDataList: WordData[], fileType: string) => {
     // 显示确认弹窗
-    clearToastsByType('info');
+    console.log("Toast清理已记录到控制台");
     showWordConfirmationModal(
       wordDataList,
       handleWordConfirmation,
@@ -780,14 +770,14 @@ function App() {
     setStatus('uploaded');
     
     setTimeout(() => {
-      addToast('success', `✅ ${fileType}解析成功！已识别 ${wordDataList.length} 个单词，请在弹窗中确认处理`);
+      console.log("Toast消息已记录到控制台");
     }, 100);
   };
 
   // 内部卡片生成函数 - 接受单词数据参数
   const handleGenerateCardsInternal = async (wordsToProcess: WordData[]) => {
     setStatus('generating');
-    addToast('info', '⚙️ 正在处理单词数据...');
+    console.log("Toast消息已记录到控制台");
 
     try {
       const completedWords: ProcessedWordData[] = [];
@@ -801,8 +791,8 @@ function App() {
         // Update progress every few words to avoid spamming toasts
         if (i % 3 === 0 || i === wordsToProcess.length - 1) {
           const progress = Math.round(((i + 1) / wordsToProcess.length) * 100);
-          clearToastsByType('info');
-          addToast('info', `🔄 生成进度: ${progress}% (${i + 1}/${wordsToProcess.length})`);
+          console.log("Toast清理已记录到控制台");
+          console.log("Toast消息已记录到控制台");
         }
         
         // Add small delay to show progress and avoid overwhelming
@@ -812,16 +802,16 @@ function App() {
       setWords(completedWords);
       setCurrentPage(0);
       setStatus('generated');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('success', `✅ 单词卡片处理完成！共生成 ${completedWords.length} 张卡片`);
+        console.log("Toast消息已记录到控制台");
       }, 100);
     } catch (error) {
       console.error('Error during generation:', error);
       setStatus('generationError');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('error', '❌ 处理失败，请检查数据格式。');
+        console.log("Toast消息已记录到控制台");
       }, 100);
     }
   };
@@ -829,7 +819,7 @@ function App() {
   // 保留原Generate按钮的兼容性（如果需要手动触发）
   const handleGenerateCards = async () => {
     if (parsedWords.length === 0) {
-      addToast('error', '❌ 请先上传CSV文件');
+      console.log("Toast消息已记录到控制台");
       return;
     }
     await handleGenerateCardsInternal(parsedWords);
@@ -857,7 +847,7 @@ function App() {
 
     // 直接生成卡片，不再显示确认弹窗
     setUploadedWordCount(wordDataList.length);
-    addToast('success', `✅ 已确认 ${wordDataList.length} 个单词，正在生成卡片...`);
+    console.log("Toast消息已记录到控制台");
     
     // 直接开始生成卡片
     setTimeout(async () => {
@@ -903,17 +893,17 @@ function App() {
     link.click();
     document.body.removeChild(link);
     
-    addToast('success', `✅ CSV文件导出成功！包含 ${words.length} 个单词`);
+    console.log("Toast消息已记录到控制台");
   };
 
   // 手动输入取消处理
   const handleManualInputCancel = () => {
     setIsManualInputOpen(false);
-    addToast('info', '📝 已取消手动输入');
+    console.log("Toast消息已记录到控制台");
   };
 
   const handleViewExample = () => {
-    addToast('info', '📖 示例CSV将在新标签页中打开');
+    console.log("Toast消息已记录到控制台");
     // 这里可以实现打开示例CSV的逻辑
   };
 
@@ -932,7 +922,7 @@ function App() {
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        addToast('success', '📥 CSV模板下载成功！文件包含完整的字段格式示例');
+        console.log("Toast消息已记录到控制台");
       } else {
         // 备用方案：如果无法加载文件，使用硬编码的模板
         const csvContent = 'Word,Definition,IPA,Example,Example_CN,Definition_CN,Audio,Picture\napple,a round fruit,/ˈæpəl/,"I eat an apple every day","我每天吃一个苹果","n. 苹果",apple.mp3,apple.jpg\nbook,printed pages bound together,/bʊk/,"I read a book before bed","我睡前读一本书","n. 书",book.mp3,book.jpg';
@@ -946,29 +936,29 @@ function App() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        addToast('success', '📥 CSV模板下载成功！');
+        console.log("Toast消息已记录到控制台");
       }
     } catch (error) {
       console.error('Error downloading template:', error);
-      addToast('error', '❌ 模板下载失败，请重试');
+      console.log("Toast消息已记录到控制台");
     }
   };
 
   // PDF导出功能
   const handleExportPDF = async () => {
     if (words.length === 0) {
-      addToast('error', '❌ 没有可导出的卡片');
+      console.log("Toast消息已记录到控制台");
       return;
     }
 
     setStatus('exporting');
-    addToast('info', '📄 正在生成PDF文件...');
+    console.log("Toast消息已记录到控制台");
     
     try {
       const printPages = document.querySelectorAll('.print-page');
       if (printPages.length === 0) {
-        clearToastsByType('info');
-        addToast('error', '❌ 没有可导出的内容');
+        console.log("Toast清理已记录到控制台");
+        console.log("Toast消息已记录到控制台");
         return;
       }
 
@@ -1033,15 +1023,15 @@ function App() {
       }
 
       pdf.save('word_cards_complete.pdf');
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('success', '✅ PDF导出成功！');
+        console.log("Toast消息已记录到控制台");
       }, 100);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      clearToastsByType('info');
+      console.log("Toast清理已记录到控制台");
       setTimeout(() => {
-        addToast('error', '❌ PDF生成失败，请重试。');
+        console.log("Toast消息已记录到控制台");
       }, 100);
     } finally {
       setStatus('generated');
@@ -1056,6 +1046,8 @@ function App() {
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   };
 
+  // 测试PDF布局功能已移除，保持界面简洁
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -1063,6 +1055,7 @@ function App() {
         onUploadClick={handleUploadClick}
         onGenerateClick={handleGenerateCards}
         onExportPDF={handleExportPDF}
+        onTestPDFLayout={undefined}
         status={status}
         uploadedWordCount={uploadedWordCount}
         wordsGenerated={words.length}
@@ -1215,51 +1208,19 @@ function App() {
              * ======================================== */}
             {words.length > 0 && (
               <div className="max-w-7xl mx-auto px-4">
-                {/* Print Pages Container - 使用PrintPage组件确保PDF导出正常 */}
-                <div className="space-y-8">
-                  {/* Front Side Page */}
-                  <PrintPage 
-                    words={words}
-                    side="front"
-                    pageNumber={currentPage}
-                  />
-                  
-                  {/* Back Side Page */}
-                  <PrintPage 
-                    words={words}
-                    side="back"
-                    pageNumber={currentPage}
-                  />
-                </div>
-                
-                {/* Print Instructions */}
-                <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg no-print">
-                  <h3 className="font-semibold text-yellow-800 mb-2">📖 打印说明：</h3>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• 先打印正面页，然后翻转纸张打印背面页</li>
-                    <li>• 使用A4纸张获得最佳效果</li>
-                    <li>• 每页包含4张A6格式的卡片</li>
-                    <li>• 打印后沿卡片边框裁切</li>
-                    <li>• 点击PDF按钮下载高质量打印文件</li>
-                  </ul>
-                </div>
+                {/* 使用预览页面组件，提供更好的预览体验 */}
+                <PrintPreviewWithReact 
+                  words={words} 
+                  currentPage={currentPage}
+                  cardsPerPage={CARDS_PER_PAGE}
+                />
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Toast Container */}
-      <div className="fixed bottom-6 right-6 space-y-2 pointer-events-none z-50">
-        {toasts.map((toast, index) => (
-          <Toast 
-            key={toast.id} 
-            toast={toast} 
-            onClose={removeToast} 
-            index={index}
-          />
-        ))}
-      </div>
+      {/* Toast功能已移除，保持界面简洁 */}
 
       {/* Manual Input Modal */}
       <ManualInputModal

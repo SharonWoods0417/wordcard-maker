@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新打印布局预览 - Word Card Maker</title>
+  <style>
+    /**
+     * 全新的打印样式系统 - 独立预览版
+     */
+    
+    /* 基础重置 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    /* 预览容器 */
+    .preview-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .preview-header {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .preview-header h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .preview-header p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    /* 新打印布局样式 */
+    .print-layout-new {
+      background: #f5f5f5;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .print-page-new {
+      /* A4 尺寸：210mm × 297mm，转换为px预览 (1mm ≈ 3.78px at 96dpi) */
+      width: 794px;  /* 210mm */
+      height: 1123px; /* 297mm */
+      background: white;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .print-header-new {
+      text-align: center;
+      margin-bottom: 30px;
+      flex-shrink: 0;
+    }
+    
+    .print-header-new h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .print-grid-new {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+      align-items: center;
+      justify-items: center;
+    }
+    
+         .print-card-new {
+       /* 卡片尺寸：76mm × 127mm（竖向），转换为px预览 */
+       width: 287px;  /* 76mm */
+       height: 480px; /* 127mm */
+       border: 2px solid #333;
+       border-radius: 8px;
+       background: white;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 16px;
+       font-weight: 500;
+       color: #666;
+     }
+    
+    /* 操作按钮 */
+    .action-buttons {
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    /* 打印样式 */
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+      
+      .preview-header,
+      .action-buttons {
+        display: none !important;
+      }
+      
+      .preview-container {
+        max-width: none !important;
+        margin: 0 !important;
+      }
+      
+      .print-layout-new {
+        background: white !important;
+        padding: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        display: block !important;
+      }
+      
+      .print-page-new {
+        width: 210mm !important;
+        height: 297mm !important;
+        background: white !important;
+        padding: 10mm !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+      }
+      
+      .print-header-new {
+        text-align: center !important;
+        margin-bottom: 15mm !important;
+        flex-shrink: 0 !important;
+      }
+      
+      .print-header-new h2 {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12pt !important;
+        font-weight: 600 !important;
+        color: black !important;
+      }
+      
+      .print-grid-new {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        grid-template-rows: 1fr 1fr !important;
+        gap: 10mm !important;
+        flex: 1 !important;
+        align-items: center !important;
+        justify-items: center !important;
+        width: 100% !important;
+      }
+      
+             .print-card-new {
+         width: 76mm !important;
+         height: 127mm !important;
+         border: 1pt solid black !important;
+         border-radius: 3mm !important;
+         background: white !important;
+         display: flex !important;
+         align-items: center !important;
+         justify-content: center !important;
+         font-size: 10pt !important;
+         font-weight: normal !important;
+         color: black !important;
+         page-break-inside: avoid !important;
+         box-sizing: border-box !important;
+       }
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <!-- 预览标题 -->
+    <div class="preview-header">
+             <h1>🏗️ 全新打印布局预览</h1>
+       <p>使用 mm 单位 • A4 标准 (210×297mm) • 4张竖向卡片 (76×127mm) • 完全隔离的样式系统</p>
+    </div>
+    
+    <!-- 操作按钮 -->
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ 浏览器打印</button>
+      <button class="btn btn-secondary" onclick="window.close()">❌ 关闭窗口</button>
+    </div>
+    
+    <!-- 新打印布局 -->
+    <div class="print-layout-new">
+      <div class="print-page-new">
+        <div class="print-header-new">
+          <h2>单词卡片 - 全新布局测试</h2>
+        </div>
+        <div class="print-grid-new">
+                     <div class="print-card-new">
+             <span>卡片 1<br/>(76×127mm)</span>
+           </div>
+           <div class="print-card-new">
+             <span>卡片 2<br/>(76×127mm)</span>
+           </div>
+           <div class="print-card-new">
+             <span>卡片 3<br/>(76×127mm)</span>
+           </div>
+           <div class="print-card-new">
+             <span>卡片 4<br/>(76×127mm)</span>
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 说明信息 -->
+    <div class="preview-header" style="margin-top: 20px;">
+      <h2>📐 重构特点</h2>
+      <div style="text-align: left; max-width: 600px; margin: 20px auto;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
+          <div>
+            <h3 style="color: #333; margin-bottom: 10px;">✨ 全新设计</h3>
+            <ul style="color: #666; list-style-position: inside;">
+              <li>使用 mm/pt 单位替代 px</li>
+              <li>干净的 DOM 结构</li>
+              <li>独立的 CSS 样式系统</li>
+              <li>完全隔离的 @media print</li>
+            </ul>
+          </div>
+          <div>
+                         <h3 style="color: #333; margin-bottom: 10px;">📏 标准尺寸</h3>
+             <ul style="color: #666; list-style-position: inside;">
+               <li>A4 页面：210mm × 297mm</li>
+               <li>卡片尺寸：76mm × 127mm（竖向）</li>
+               <li>页边距：约15mm</li>
+               <li>卡片间距：约10mm</li>
+             </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

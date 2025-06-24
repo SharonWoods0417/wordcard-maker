@@ -93,6 +93,11 @@ export const FourLineGrid: React.FC<FourLineGridProps> = ({
         textAnchor="middle"
         dominantBaseline="alphabetic"
         letterSpacing="0.05em" // 统一字母间距
+        style={{
+          fontFamily: "'Andika', 'Schoolbell', 'Patrick Hand', 'Kalam', 'Architects Daughter', sans-serif",
+          fontWeight: "400",
+          fontStyle: "normal"
+        }}
       >
         {word}
       </text>
