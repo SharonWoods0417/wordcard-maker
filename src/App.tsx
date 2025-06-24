@@ -12,10 +12,13 @@ import {
 } from 'lucide-react';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+
+// 新的PDF导出组件
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PdfDocument from './components/pdf/PdfDocument';
+
 import { WordCard } from './components/WordCard';
 import { PrintPreviewWithReact } from './components/PrintPreviewWithReact';
 import { Header } from './components/Header';
@@ -23,7 +26,6 @@ import { HeroSection } from './components/HeroSection';
 import { CardShowcaseSection } from './components/CardShowcaseSection';
 import ManualInputModal from './components/ManualInputModal';
 import { showWordConfirmationModal } from './utils/boltModalIntegration';
-import { usePDFExport } from './hooks/usePDFExport';
 
 // Types
 interface WordData {
@@ -36,6 +38,15 @@ interface WordData {
   Audio?: string;
   Picture?: string;
 }
+
+// PDF组件所需的数据类型
+interface PdfWordData {
+  word: string;
+  imageUrl: string;
+  ipa: string;
+  phonics: { text: string; color: string }[];
+}
+
 
 interface ProcessedWordData extends WordData {
   Word: string;
@@ -63,9 +74,6 @@ function App() {
   const [parsedWords, setParsedWords] = useState<WordData[]>([]);
   const [isManualInputOpen, setIsManualInputOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // 导入简化版PDF导出功能
-  const { exportToPDF } = usePDFExport();
 
   const CARDS_PER_PAGE = 4;
   const totalPages = Math.ceil(words.length / CARDS_PER_PAGE);
@@ -944,98 +952,26 @@ function App() {
     }
   };
 
-  // PDF导出功能
+  // 数据格式转换函数：将ProcessedWordData转换为PdfWordData
+  const convertToPdfData = (processedWords: ProcessedWordData[]): PdfWordData[] => {
+    const phonicsColors = ["#93c5fd", "#fecaca", "#bbf7d0", "#fef08a"]; // 蓝, 红, 绿, 黄
+    return processedWords.map(word => ({
+      word: word.Word,
+      imageUrl: word.Picture,
+      ipa: word.IPA,
+      phonics: Array.isArray(word.PhonicsChunks) 
+        ? word.PhonicsChunks.map((chunk, index) => ({
+            text: chunk,
+            color: phonicsColors[index % phonicsColors.length]
+          }))
+        : [{ text: String(word.PhonicsChunks), color: phonicsColors[0] }]
+    }));
+  };
+
   const handleExportPDF = async () => {
-    if (words.length === 0) {
-      console.log("Toast消息已记录到控制台");
-      return;
-    }
-
-    setStatus('exporting');
-    console.log("Toast消息已记录到控制台");
-    
-    try {
-      const printPages = document.querySelectorAll('.print-page');
-      if (printPages.length === 0) {
-        console.log("Toast清理已记录到控制台");
-        console.log("Toast消息已记录到控制台");
-        return;
-      }
-
-      const pdf = new jsPDF('portrait', 'mm', 'a4');
-      
-      for (let i = 0; i < printPages.length; i++) {
-        const page = printPages[i] as HTMLElement;
-        
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Get actual page dimensions (A4 size in pixels at 96 DPI)
-        const pageWidth = Math.round(210 * 3.779527559); // 794px
-        const pageHeight = Math.round(297 * 3.779527559); // 1123px
-        
-        const canvas = await html2canvas(page, {
-          scale: 1.5,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: pageWidth,
-          height: pageHeight,
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: pageWidth,
-          windowHeight: pageHeight,
-          foreignObjectRendering: false,
-          logging: false,
-          onclone: function(clonedDoc) {
-            const clonedPage = clonedDoc.querySelector('.print-page') as HTMLElement;
-            if (clonedPage) {
-              clonedPage.style.width = '210mm';
-              clonedPage.style.height = '297mm';
-              clonedPage.style.margin = '0';
-              clonedPage.style.padding = '4mm';
-              clonedPage.style.boxSizing = 'border-box';
-              clonedPage.style.background = 'white';
-              clonedPage.style.display = 'flex';
-              clonedPage.style.flexDirection = 'column';
-              
-              const grid = clonedPage.querySelector('.grid') as HTMLElement;
-              if (grid) {
-                grid.style.flex = '1';
-                grid.style.display = 'grid';
-                grid.style.gridTemplateColumns = '1fr 1fr';
-                grid.style.gridTemplateRows = '1fr 1fr';
-                grid.style.gap = '4mm';
-                grid.style.width = '100%';
-                grid.style.height = '100%';
-              }
-            }
-          }
-        });
-
-        const imgData = canvas.toDataURL('image/png', 0.95);
-        
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-      }
-
-      pdf.save('word_cards_complete.pdf');
-      console.log("Toast清理已记录到控制台");
-      setTimeout(() => {
-        console.log("Toast消息已记录到控制台");
-      }, 100);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      console.log("Toast清理已记录到控制台");
-      setTimeout(() => {
-        console.log("Toast消息已记录到控制台");
-      }, 100);
-    } finally {
-      setStatus('generated');
-    }
+    // 这个函数现在可以被废弃，因为我们将使用PDFDownloadLink组件
+    // 但为防止其他地方调用，暂时保留一个空函数或提示
+    console.log("PDF导出功能已更新，请点击新的'下载PDF'按钮。");
   };
 
   const handlePrevPage = () => {
@@ -1164,12 +1100,33 @@ function App() {
                       );
                     }}
                     disabled={parsedWords.length === 0}
-                    className="flex items-center px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    className="flex items-center px-3 py-2 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                     title="重新编辑单词列表"
                   >
                     <Settings className="w-4 h-4 mr-1" />
                     编辑单词表
                   </button>
+
+                  {/* 新的高质量PDF下载按钮 */}
+                  <PDFDownloadLink
+                    document={<PdfDocument words={convertToPdfData(words)} />}
+                    fileName="wordcards_high_quality.pdf"
+                    className="flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {({ loading }) =>
+                      loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-1" />
+                          下载PDF
+                        </>
+                      )
+                    }
+                  </PDFDownloadLink>
                 </div>
               </div>
             )}

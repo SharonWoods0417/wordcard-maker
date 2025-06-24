@@ -143,7 +143,7 @@ export const usePDFExportWithReact = () => {
                   font-weight: 700 !important;
                   line-height: 1.2 !important;
                   white-space: nowrap !important;
-                  border: 1px solid !important;
+                  border: 1px solid transparent !important;
                   box-sizing: border-box !important;
                   min-width: 24px !important;
                   text-align: center !important;
