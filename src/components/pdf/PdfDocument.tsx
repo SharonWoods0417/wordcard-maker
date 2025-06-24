@@ -1,18 +1,11 @@
 import React from 'react';
-import { Page, Document, StyleSheet, View } from '@react-pdf/renderer';
+import { Page, Document, StyleSheet } from '@react-pdf/renderer';
 import WordCardPDF from './WordCardPDF';
+import { WordEntry } from '../WordCardShared';
 
-// 定义单词卡片的数据结构类型
-type WordData = {
-  word: string;
-  imageUrl: string;
-  ipa: string;
-  phonics: { text: string; color: string }[];
-};
-
-// 定义组件的Props
+// 定义组件的Props - 直接使用ProcessedWordData
 interface PdfDocumentProps {
-  words: WordData[];
+  words: WordEntry[];
 }
 
 const styles = StyleSheet.create({
@@ -39,8 +32,8 @@ const PdfDocument: React.FC<PdfDocumentProps> = ({ words }) => {
     <Document>
       {pages.map((pageWords, pageIndex) => (
         <Page key={pageIndex} size="A4" style={styles.page}>
-          {pageWords.map((wordData, wordIndex) => (
-            <WordCardPDF key={wordIndex} wordData={wordData} />
+          {pageWords.map((wordEntry, wordIndex) => (
+            <WordCardPDF key={wordIndex} wordEntry={wordEntry} />
           ))}
         </Page>
       ))}

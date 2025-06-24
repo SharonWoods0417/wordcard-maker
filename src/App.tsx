@@ -18,6 +18,7 @@ import * as XLSX from 'xlsx';
 // 新的PDF导出组件
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import PdfDocument from './components/pdf/PdfDocument';
+import { WordEntry } from './components/WordCardShared';
 
 import { WordCard } from './components/WordCard';
 import { PrintPreviewWithReact } from './components/PrintPreviewWithReact';
@@ -39,13 +40,7 @@ interface WordData {
   Picture?: string;
 }
 
-// PDF组件所需的数据类型
-interface PdfWordData {
-  word: string;
-  imageUrl: string;
-  ipa: string;
-  phonics: { text: string; color: string }[];
-}
+// PDF组件所需的数据类型已整合到WordEntry中
 
 
 interface ProcessedWordData extends WordData {
@@ -952,19 +947,18 @@ function App() {
     }
   };
 
-  // 数据格式转换函数：将ProcessedWordData转换为PdfWordData
-  const convertToPdfData = (processedWords: ProcessedWordData[]): PdfWordData[] => {
-    const phonicsColors = ["#93c5fd", "#fecaca", "#bbf7d0", "#fef08a"]; // 蓝, 红, 绿, 黄
+  // 数据格式转换函数：将ProcessedWordData转换为WordEntry格式
+  const convertToWordEntry = (processedWords: ProcessedWordData[]): WordEntry[] => {
     return processedWords.map(word => ({
-      word: word.Word,
-      imageUrl: word.Picture,
-      ipa: word.IPA,
-      phonics: Array.isArray(word.PhonicsChunks) 
-        ? word.PhonicsChunks.map((chunk, index) => ({
-            text: chunk,
-            color: phonicsColors[index % phonicsColors.length]
-          }))
-        : [{ text: String(word.PhonicsChunks), color: phonicsColors[0] }]
+      Word: word.Word,
+      IPA: word.IPA,
+      PhonicsChunks: word.PhonicsChunks,
+      PhonicsIPA: word.PhonicsIPA,
+      Definition_CN: word.Definition_CN,
+      Example: word.Example,
+      Example_CN: word.Example_CN,
+      Picture: word.Picture,
+      Audio: word.Audio,
     }));
   };
 
@@ -1109,7 +1103,7 @@ function App() {
 
                   {/* 新的高质量PDF下载按钮 */}
                   <PDFDownloadLink
-                    document={<PdfDocument words={convertToPdfData(words)} />}
+                    document={<PdfDocument words={convertToWordEntry(words)} />}
                     fileName="wordcards_high_quality.pdf"
                     className="flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
